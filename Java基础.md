@@ -12,12 +12,12 @@ Java 解释器可以在任何移植了解释器的机器上执行 Java 字节码
 
 ### 安装
 
-[jdk安装](https://www.cnblogs.com/yjd_hycf_space/p/7885099.html)
+#### 入门
 
 1. 在CentOS的/usr/local/下创建java文件夹
 2. 使用tar命令将jdk文件解压到此文件夹，并将文件夹改名为java
-3. 在 `~/.bash_profile` 文件（只对当前用户生效）内，或者 `/etc/profile` （对所有用户生效）内， 配置JAVA_HOME、PATH路径
-4. 在shell内运行 `source /etc/profile` 加载配置
+3. 在 `~/.bash_profile` 文件（只对当前用户生效）内，或者 `/etc/profile` （对所有用户生效）内，配置JAVA_HOME、PATH路径
+4. 在shell内运行 `source ~/.bash_profile` 或 `source /etc/profile` 加载配置
 
 ```sh
 export JAVA_HOME=/usr/local/java
@@ -32,6 +32,35 @@ export CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
 javac -version
 # javac 1.8.0
 ```
+
+#### 配置
+
+需要配置的环境变量
+
+1. PATH环境变量。作用是指定命令搜索路径，在shell下面执行命令时，它会到PATH变量所指定的路径中查找看是否能找到相应的命令程序。我们需要把 jdk安装目录下的bin目录增加到现有的PATH变量中，bin 目录中包含经常要用到的可执行文件如javac/java/javadoc等待，设置好 PATH 变量后，就可以在任何目录下执行 javac/java 等工具了。
+2. CLASSPATH环境变量。作用是指定类搜索路径，要使用已经编写好的类，前提当然是能够找到它们了，JVM就是通过CLASSPTH来寻找类的。我们 需要把jdk安装目录下的lib子目录中的dt.jar和tools.jar设置到CLASSPATH中，当然，当前目录“.”也必须加入到该变量中。
+3. JAVA_HOME环境变量。它指向jdk的安装目录，Eclipse/NetBeans/Tomcat等软件就是通过搜索JAVA_HOME变量来找到并使用安装好的jdk。
+
+三种配置环境变量的方法
+
+1. 修改/etc/profile文件。所有用户的shell都有权使用这些环境变量，可能会给系统带来安全性问题。
+2. 修改.bash_profile文件。修改个人用户主目录下的.bash_profile文件，只有该用户可以使用这些环境变量
+3. 直接在shell下设置变量。仅仅是临时使用，关闭终端则失效
+
+```sh
+# 1. 用文本编辑器打开/etc/profile，在profile文件末尾加入
+# 2. 用文本编辑器打开~/.bash_profile，文件末尾加入： 
+# 3. 在shell终端执行下列命令：
+export JAVA_HOME=/usr/share/jdk1.6.0_14
+export PATH=$JAVA_HOME/bin:$PATH 
+export CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar 
+```
+
+linux下用冒号“:”来分隔路径。export是把这三个变量导出为全局变量。
+
+卸载jdk 
+
+找到jdk安装目录的_uninst子目录，在shell终端执行命令 `./uninstall.sh` 即可卸载jdk。
 
 ### 入门程序
 
@@ -1102,7 +1131,7 @@ String name = cl.getName();//name = java.util.Random
 // 获得类名对应的Class对象
 Class cl = Class.forName("java.util.Random");
 
-//获得Class对象
+// 获得Class对象
 Class cl1 = Random.class; // if you import java.util.*
 Class cl2 = int.class;
 Class cl3 = Double[].class;
@@ -1110,8 +1139,12 @@ Class cl3 = Double[].class;
 // 比较操作（每个类型只有一个Class对象）
 e.getClass() == Employee.class
 
-//动态创建一个类的实例(调用默认的构造器)
+// 动态创建一个类的实例
+// 创建默认构造的对象
+String str = String.class.newInstance()
 e.getClass().newInstance();
+// 创造带参构造
+String str = String.class.getConstructor(String.class).newInstance("Hello"); 
 ```
 
 newlnstance方法调用默认的构造器(没有参数的构造器)初始化新创建的对象。如果这个类没有默认的构造器，就会抛出一个异常。如果需要传递参数给构造器，就需要调用 Constructor 类的 newInstance 方法。
@@ -1220,7 +1253,9 @@ public interface Comparable<T>{
 
 lambda 表达式是一个可传递的代码块，这个代码块会在将来某个时间调用。
 
-语法
+### 语法
+
+语法形式为 () -> {}，其中 () 用来描述参数列表，{} 用来描述方法体，-> 为 lambda运算符 ，读作(goes to)。
 
 ```java
 // lambda表达式
@@ -1238,36 +1273,93 @@ ActionListener listener = event ->
 
 lambda表达式的返回类型总是会由上下文推导得出。
 
-函数式接口
+### 函数式接口
 
 对于只有一个抽象方法的接口，这种接口称为函数式接口(functional interface)。
 
 需要这种接口的对象时，就可以提供一个 lambda 表达式，即，lambda 表达式可以传递到函数式接口。
 
-方法引用
+- 方法引用
+
+不需要自己重写某个匿名内部类的方法，可以利用 lambda 表达式的接口快速指向一个已经被实现的方法。
+
+object::instanceMethod 如，System.out::println 等价于 x -> System.out.println(x)
+
+Class::staticMethod 如，Math::pow 等价于 (x, y) -> Math.pow(x, y)
+
+Class::instanceMethod 如，String::compareToIgnoreCase 等同于 (x, y) -> x.compareToIgnoreCase(y)
 
 ```java
-Timer t = new Timer(1000, System.out::println);
-// 等价于
-Timer t = new Timer(1000, event -> System.out.println(event));
+public class Test {
+    public static void main(String[] args) {
+        Mytest a = System.out::print;
+        a.printSome("hhh");
+    }
+}
 
-this::equals
-super::instanceMethod
+interface Mytest {
+    void printSome(String s);
+}
+
+public class Exe1 {
+    public static void main(String[] args) {
+        ReturnOneParam lambda1 = a -> doubleNum(a);
+        System.out.println(lambda1.method(3));
+
+        //lambda2 引用了已经实现的 doubleNum 方法
+        ReturnOneParam lambda2 = Exe1::doubleNum;
+        System.out.println(lambda2.method(3));
+
+        Exe1 exe = new Exe1();
+        //lambda4 引用了已经实现的 addTwo 方法
+        ReturnOneParam lambda4 = exe::addTwo;
+        System.out.println(lambda4.method(2));
+    }
+
+    /**
+     * 要求
+     * 1.参数数量和类型要与接口中定义的一致
+     * 2.返回值类型要与接口中定义的一致
+     */
+    public static int doubleNum(int a) {
+        return a * 2;
+    }
+
+    public int addTwo(int a) {
+        return a + 2;
+    }
+}
 ```
-
-有3种情况
-
-- Object::instanceMethod 如，System.out::println 等价于 x -> System.out.println(x) 
-- Class::staticMethod 如，Math::pow 等价于 (x, y) -> Math.pow(x, y)
-- Class::instanceMethod 如，String::compareToIgnoreCase 等同于 (x, y) -> x.compareToIgnoreCase(y)
 
 方法引用不能独立存在，总是会转换为函数式接口的实例。
 
 构造器引用
 
+类似于方法引用，方法名为new
+
 ```java
 // Person 构造器的一个引用，相当于 new Person()。调用哪个根据上下文确定
 Person::new
+
+interface ItemCreatorBlankConstruct {
+    Item getItem();
+}
+interface ItemCreatorParamContruct {
+    Item getItem(int id, String name, double price);
+}
+
+public class Exe2 {
+    public static void main(String[] args) {
+        ItemCreatorBlankConstruct creator = () -> new Item();
+        Item item = creator.getItem();
+
+        ItemCreatorBlankConstruct creator2 = Item::new;
+        Item item2 = creator2.getItem();
+
+        ItemCreatorParamContruct creator3 = Item::new;
+        Item item3 = creator3.getItem(112, "鼠标", 135.99);
+    }
+}
 ```
 
 变量作用域
@@ -1276,10 +1368,32 @@ lambda表达式可以捕获外围作用域中变量的值，只能引用值不�
 
 lambda 表达式的体与嵌套块有相同的作用域。
 
+在 lambda 表达式中声明与一个局部变量同名的参数或局部变量是不合法的。
+
+在一个 lambda 表达式中使用 this 关键字时，是指创建这个 lambda 表达式的方法的 this 参数。 
+
 ```java
+// 捕获外围作用域的值
+public static void repeat(String text, int count) {
+    for (int i =1; i <= count; i++) {
+        ActionListener listener = event -> {
+            System.out.println("this is : " + text); // i + " : " + text 则出错
+        };
+        new Timer(1000, listener).start();
+    }
+}
+// 不能使用局部变量的名字作为参数
 Path first = Paths.get("usr/bin");
 Couparator<String> comp =
     (first, second) -> first.length() - second.length(); // Error: Variable first already defined
+// this 参数
+public class Application {
+    public void init() {
+        ActionListener listener = event -> {
+            System.out.println(this.toString()); // 会调用 Application对象的 toString 方法
+        };
+    }
+}
 ```
 
 完整应用
@@ -1422,9 +1536,9 @@ Object proxy = Proxy.newProxylnstance(null , interfaces, handler);
 Throwable的常用方法
 
 ```java
-String  getMessage();//返回详细信息
-String  toString();//返回短描述
-void    printStackTrace();
+String getMessage();//返回详细信息
+String toString();//返回短描述
+void printStackTrace();
 ```
 
 ![java中的异常层次结构](images/Java/java中的异常层次结构.png)
@@ -1434,6 +1548,17 @@ Error 类层次结构描述了 Java 运行时系统的内部错误和资源耗�
 由程序错误导致的异常属于RuntimeException；而程序本身没有问题，但由于像I/O错误这类问题导致的异常属于其他异常。
 
 Java语言规范将派生于 Error类 或 RuntimeException 类的所有异常称为非受查(unchecked)异常，所有其他的异常称为受查(checked)异常。受查异常有异常处理器。
+
+
+1. 受检查的异常：这种在编译时被强制检查的异常称为"受检查的异常"。即在方法的声明中声明的异常。
+2. 不受检查的异常：在方法的声明中没有声明，但在方法的运行过程中发生的各种异常被称为"不被检查的异常"。这种异常是错误，会被自动捕获。
+
+Exception是所有被检查异常的基类，然而，RuntimeException是所有不受检查异常的基类。
+
+Java中所有异常或者错误都继承Throwable，我们把它分为三类：
+- Error: 所有都继承自Error，表示致命的错误，比如内存不够，字节码不合法等。
+- Exception: 这个属于应用程序级别的异常，这类异常必须捕捉。
+- RuntimeException: RuntimeException继承了Exception，而不是直接继Error,这个表示系统异常，比较严重。
 
 ```java
 Class MyAnimation{
@@ -1763,7 +1888,9 @@ jhat dumpFileName
 
 10. 如果使用 -Xprof 标志运行 Java 虚拟机，就会运行一个基本的剖析器来跟踪那些代码中经常被调用的方法剖析信息将发送给 System.out
 
-## 泛型程序设计(重看)
+## 泛型程序设计（重看）
+
+泛型程序设计(Generic programming)意味着编写的代码可以被很多不同类型的对象所重用。
 
 简单泛型类
 
@@ -1998,6 +2125,8 @@ public interface List<E> extends Collection<E>{
 
 LinkedList
 
+链表是一个有序集合。
+
 ```java
 public class LinkedList<E> implements List<E> {
     ListIterator<E> listIterator​(); // 返回 ListIterator 对象，按序访问
@@ -2005,13 +2134,20 @@ public class LinkedList<E> implements List<E> {
 }
 
 List<String> staff = new LinkedList<>();
-//方法将对象添加到链表的尾部，这种依赖于位置的add方法由迭代器负责
+// add 方法将对象添加到链表的尾部，这种依赖于位置的add方法由迭代器负责
 staff.add("Amy");
 staff.add("Bob");
 Iterator iter = staff.iterator();
 String first = iter.next();
+iter.add("Juliet"); // --> Amy Juliet Bob。Add 方法在迭代器位置之前添加一个新对象。
 String second = iter.next();
 iter.remove();
+
+interface ListIterator<E> extends Iterator<E> {
+    void add(E element);
+    E previous();
+    boolean hasPrevious(); // 可以向前遍历
+}
 ```
 
 ArrayList
@@ -2108,6 +2244,8 @@ counts.forEach((k，v) -> {
 });
 ```
 
+![Map总结](images/Java/Map总结.png)
+
 有 HashMap 和 TreeMap
 
 WeakHashMap
@@ -2116,8 +2254,7 @@ WeakHashMap
 
 LinkedHashMap
 
-LinkedHashSet 和 LinkedHashMap
-类用来记住插人元素项的顺序。
+LinkedHashSet 和 LinkedHashMap 类用来记住插人元素项的顺序。
 
 ![LinkedHashMap](images/Java/LinkedHashMap.png)
 
@@ -2181,9 +2318,14 @@ staff.toArray(new String[staff.size()]); // 不会再创建新数组
 
 ### JAR文件
 
-Java 归档(JAR)文件，将应用程序打包成一个文件(就像把一堆word文件打成一个压缩包一样)。
+Java 归档(JAR)文件，将应用程序打包成一个文件(就像把一堆word文件打成一个压缩包一样)。一个 JAR 文件既可以包含类文件，也可以包含诸如图像和声音这些其他类型的文件。JAR 可被像编译器和 JVM 这样的工具直接使用。JAR 中的 manifests 和部署描述符，用来指示工具如何处理特定的 JAR。
 
-一个 JAR 文件既可以包含类文件，也可以包含诸如图像和声音这些其他类型的文件。此外，JAR 文件采用 ZIP 压缩格式。
+META-INF 目录用于存储包和扩展的配置数据，如安全性和版本信息。目录中包含以下文件
+
+1. MANIFEST.MF。这个 manifest 文件定义了与扩展和包相关的数据。
+2. INDEX.LIST。这个文件由 jar 工具的新选项 -i 生成，它包含在应用程序或者扩展中定义的包的位置信息。
+3. xxx.SF。这是 JAR 文件的签名文件。占位符 xxx 标识了签名者。
+4. xxx.DSA。与签名文件相关联的签名程序块文件，它存储了用于签名 JAR 文件的公共签名。
 
 创建 JAR 文件
 
@@ -2195,6 +2337,17 @@ jar cvf JarFileName File1 File2 ...
 ```
 
 ![jar程序选项](images/Java/jar程序选项.png)
+
+|功能|命令|
+|---|---|
+|用一个单独的文件创建一个 JAR 文件|jar cf jar-file input-file...|
+|用一个目录创建一个 JAR 文件|jar cf jar-file dir-name|
+|创建一个未压缩的 JAR 文件|jar cf0 jar-file dir-name|
+|更新一个 JAR 文件|jar uf jar-file input-file...|
+|查看一个 JAR 文件的内容|jar tf jar-file|
+|提取一个 JAR 文件的内容|jar xf jar-file|
+|从一个 JAR 文件中提取特定的文件|jar xf jar-file archived-file...|
+|运行一个打包为可执行 JAR 文件的应用程序|java -jar app.jar|
 
 ### 清单文件
 
@@ -2235,7 +2388,17 @@ Name: com/mycompany/util/
 Sealed: true
 ```
 
+扩展类
+
+```sh
+Class-Path: extension2.jar # 相对路径，本jar可以调用 extension2.jar 中的类
+```
+
 ### 可执行的JAR文件
+
+一个可执行的 jar 文件是一个自包含的 Java 应用程序，它存储在特别配置的 JAR 文件中，可以由 JVM 直接执行它而无需事先提取文件或者设置类路径。
+
+运行非可执行的 JAR 中的应用程序，则必须将它加入到类路径中，并用名字调用应用程序的主类。
 
 ```sh
 # 指定程序的入口点，即运行jar程序时，开始的地方
@@ -2258,7 +2421,7 @@ jar -xf packEx.jar
 Main-Class: com.mycompany.mypkg.MainAppClass
 # 3. 执行jar工具来创建带有所有类以及mainifest的JAR文件
 cd MyProject/classes
-jar -cvmf manifest.mf MyProgram.jar *.class
+jar -cvmf manifest.mf MyProgram.jar *.class # jar cmf manifest ExecutableJar.jar(可执行jar名) application-dir(程序目录)
 # 4. 启动程序
 java -jar MyProgram.jar
 ```
@@ -2347,7 +2510,7 @@ void exportNode(OutputStream out)
 void importPreferences(InputStream in)
 ```
 
-## 并发(重看)
+## 并发
 
 ### 线程
 
@@ -2386,9 +2549,15 @@ Thread.currentThread().isInterrupted()
 t.getState();
 ```
 
-如果线程被阻塞，就无法检测中断状态。
+发生 InterruptedException 时，run方法将结束执行。
 
-被中断的线程可以决定如何响应中断。
+没有强制线程终止的方法，interrupt方法可以用来请求终止线程。
+
+如果线程被阻塞，就无法检测中断状态。在阻塞线程（调用sleep或wait后）上调用interrupt方法，会产生 InterruptedException，同时中断状态被清除（未被中断）。
+
+被中断的线程可以决定如何响应中断，可以继续运行，也可以中断请求。
+
+#### 线程状态
 
 线程可以有如下 6 种状态
 
@@ -2399,12 +2568,70 @@ t.getState();
 - Timed waiting (计时等待) 
 - Terminated (被终止)
 
-线程属性
+带有超时参数的方法有：Thread.sleep, Object.wait, Thread.join, Lock.tryLock, Condition.await的计时版。
+
+![线程状态](images/Java/线程状态.png)
+
+#### 线程属性
 
 - 线程优先级 默认继承父线程的优先级，setPriority设置优先级。
-- 守护线程 `t.setDaemon(true);` 将线程转为守护线程（在线程启动前调用）。守护线程为其他线程提供服务。
+- 守护线程 守护线程为其他线程提供服务。
 - 线程组
 - 处理未捕获异常的处理器 当一个线程因未捕获异常而终止，按规定要将客户报告记录到日志中。
+
+线程优先级
+
+每个线程有一个优先级。默认会继承父线程的优先级。
+
+```java
+setPriority() // 设置线程优先级
+Thread.MIN_PRIORITY == 1
+Thread.MAX_PRIORITY == 10
+Thread.NORM_PRIORITY == 5
+Thread.yield() // 线程在让步状态，则同等级或高等级的线程会被调度。
+```
+
+守护线程
+
+```java
+// 转换为守护线程
+t.setDaemon(true);
+```
+
+守护线程的唯一用途是为其他线程提供服务。当只剩下守护线程时，虚拟机就退出了。
+
+未捕获异常处理器
+
+线程的run方法内出现未检查异常时，在线程死亡之前，异常被传递到一个用于捕获异常的处理器。该处理器实现 Thread.UncaughtExceptionHandler 接口。
+
+不为独立的线程安装处理器，则处理器是该线程的 ThreadGroup 对象。ThreadGroup 类实现了 Thread.UncaughtExceptionHandler 接口。
+
+```java
+Thread.setDefaultUncaughtExceptionHandler() // 为线程安装默认处理器
+t.setUncaughtExceptionHandler() // 为线程安装处理器
+
+public class TestThread {
+    public static void main(String[] args) {
+        Runnable r = () -> {
+            throw new MyException("这是我创建的异常");
+        };
+        Thread t = new Thread(r);
+        MyHandler handler = new MyHandler();
+        t.setUncaughtExceptionHandler(handler);
+        t.start();
+    }
+}
+
+class MyHandler implements UncaughtExceptionHandler {
+    @Override
+    public void uncaughtException(Thread t, Throwable e) {
+        System.out.println("这是我创建的Handler");
+        System.out.println(t.getName());
+        System.out.println(e.getClass());
+    }
+    
+}
+```
 
 ### 同步
 
@@ -2427,7 +2654,7 @@ try {
 
 如果在临界区发生异常，并且没有处理，则对象可能处于受损状态。即，不是原子操作，不会自动回退已发生的操作。
 
-条件对象（条件变量）
+#### 条件对象（条件变量）
 
 进入临界区后，如果不满足一定条件，会释放锁，并阻塞在这个条件的等待队列里。锁可以拥有一个或多个相关的条件对象。
 
@@ -2445,7 +2672,7 @@ class Bank {
             while (accounts[from] < amount)
                 sufficientFunds.await(); // 被条件阻塞，释放锁
             // transfer funds ...
-            sufficientFunds.signalAll(); // 唤醒其他被该条件阻塞的线程
+            sufficientFunds.signalAll(); // 解除等待线程的阻塞，线程会通过竞争实现对象的访问
             // sufficientFunds.signal(); // 随机选择一个在该条件上被阻塞的线程，解除其阻塞状态。如果条件不满足，可能会继续阻塞。
         } finally {
             bankLock.unlock();
@@ -2456,7 +2683,7 @@ class Bank {
 
 可能导致死锁。
 
-synchronized 关键字
+#### synchronized 关键字
 
 Java 中的每一个对象都有一个内部锁。如果一个方法用 synchronized 关键字声明，那么对象的锁将保护整个方法。即
 
@@ -2491,14 +2718,11 @@ intrinsicCondition.signalAll();
 - 试图获得锁时不能设定超时。
 - 每个锁仅有单一的条件，可能是不够的。
 
-同步阻塞
+#### 同步阻塞
+
+同步阻塞，获得某个对象的内置锁
 
 ```java
-// 同步阻塞，它获得obj的对象锁
-synchronized (obj) {
-    // 临界区
-}
-
 public class Bank {
     private doublet] accounts;
     private Object lock = new Object(); // 创建这个对象，仅仅是为了使用它的对象锁
@@ -2511,7 +2735,21 @@ public class Bank {
 }
 ```
 
-volatile 关键字
+使用一个对象的锁，来实现额外的原子操作，被称为客户端锁定(client-side locking)。不推荐使用。
+
+监视器概念
+
+- 监视器是只包含私有域的类。
+- 每个监视器类的对象有一个相关的锁。
+- 使用该锁对所有的方法进行加锁。换句话说，如果客户端调用 obj.method()，那么obj对象的锁是在方法调用开始时自动获得，并且当方法返回时自动释放该锁。
+- 该锁可以有任意多个相关条件。
+
+#### volatile 关键字
+
+1. 计算机能够暂时在寄存器或本地内存缓冲区中保存内存中的值。可能导致在同一个内存位置取到不同的值
+2. 编译器可以改变指令执行顺序，但是线程可以改变内存中的值。
+
+加锁后，编译器被要求通过在必要的时候刷新本地缓存来保持锁的效应，并且不能不正当地重新排序指令。因此可以避免上面2个问题。
 
 如果声明一个域为 volatile，那么编译器和虚拟机就知道该域是可能被另一个线程并发更新的。volatile 变量不能提供原子性。
 
@@ -2521,9 +2759,13 @@ public boolean isDone() { return done; }
 public void setDone() { done = true; }
 ```
 
-原子性
+#### 原子类
+
+java.util.concurrent.atomic 包中有很多类使用了很高效的机器级指令(而不是使用锁)来保证其他操作的原子性。
 
 ```java
+incrementAndGet()
+decrementAndGet()
 public static AtomicLong nextNumber = new AtomicLong();
 // In some thread...
 long id = nextNumber.incrementAndGet();
@@ -2536,6 +2778,23 @@ do {
 
 largest.updateAndGet(x -> Math.max(x, observed)); // 作用同上
 largest.accumulateAndCet(observed, Math::max); // 作用同上
+
+// LongAdder
+final LongAdder adder = new LongAdder();
+for (...) {
+    pool.submit(() -> {
+        while (...) {
+            if (...)
+                adder.increment();
+        }
+    });
+}
+long total = adder.sum();
+
+// LongAccumulator
+LongAccumulator adder = new LongAccumulator(Long::sum, 0);
+// In some thread...
+adder.accumulate(value) ;
 ```
 
 死锁
@@ -2551,11 +2810,13 @@ public static final ThreadLocal<SimpleDateFormat> dateFormat =
 // 调用当前线程的实例
 String dateStamp = dateFormat.get().format(new Date());
 
+// 为各个线程提供一个单独的随机数生成器。ThreadLocalRandom.current() 调用会返回特定于当前线程的 Random 类实例。
 int random = ThreadLocalRandom.current().nextInt(upperBound);
-// ThreadLocalRandom.current() 调用会返回特定于当前线程的 Random 类实例。
 ```
 
-锁测试
+锁测试与超时
+
+tryLock方法试图申请一个锁，在成功获得锁后返回true；否则，立即返回 false，线程可以立即离开去做其他事情。
 
 ```java
 if (myLock.tryLock()) {
@@ -2565,7 +2826,13 @@ if (myLock.tryLock()) {
 } else {
     // do something else
 }
+// 使用超时参数
+myLock.tryLock(100, TineUnit.MILLISECONDS)
 ```
+
+lock 方法不能被中断。如果调用带有用超时参数的 tryLock，那么如果线程在等待期间被中断，将抛出 InterruptedException 异常。
+
+lockInterruptibly 方法相当于一个超时设为无限的 tryLock 方法。
 
 读/写锁
 
@@ -2591,37 +2858,141 @@ public void transfer(...) {
 }
 ```
 
+stop方法破坏对象的状态，suspend方法容易死锁，所以他们被废弃了。
+
 ### 阻塞队列
 
+使用场景：生产者向队列装入产品，消费者从队列取出产品。由队列解决同步问题。
+
 ![阻塞队列的方法](images/Java/阻塞队列的方法.png)
+
+put -- take 阻塞
+
+add -- remove -- element 发生异常
+
+offer -- poll -- peek 返回false, null
+
+```java
+// 带有超时参数
+boolean success = q.offer(x, 100, TimeUnit.MILLISECONDS);
+Object head = q.poll(100, TimeUnit.MILLISECONDS);
+```
 
 常用阻塞队列
 
 - LinkedBlockingQueue 容量无上限
-- ArrayBlockingQueue 需要指定容量
+- LinkedBlockingDeque 双端队列
+- ArrayBlockingQueue 需要指定容量，可设置公平性
 - PriorityBlockingQueue 带优先级的队列，没有容量上限
-- DelayQueue 
-- TransferQueue
+- DelayQueue 实现了 Delayed 接口
+- TransferQueue 生产者调用 `q.transfer(iteni);` 这个调用会阻塞，直到另一个线程将元素(item) 删除。
 
 ### 线程安全的集合
+
+java.util.concurrent 包提供了映射、有序集和队列的高效实现。
 
 - ConcurrentHashMap
 - ConcurrentSkipListMap
 - ConcurrentSkipListSet
 - ConcurrentLinkedQueue
-- CopyOnWriteArrayList
-- CopyOnWriteArraySet
+
+这些集合的 size 方法不必在常量时间内操作，确定集合当前的大小通常需要遍历。
+
+集合返回弱一致性(weakly consistent)的迭代器。这意味着迭代器不一定能反映出它们被构造之后的所有的修改，但是，它们不会将同一个值返回两次，也不会拋出 ConcurrentModificationException 异常。
 
 并发散列映射将桶组织为树，而不是列表(Java SE 8+)。ConcurrentHashMap 中不允许有 null 值。
 
 ```java
-// ConcurrentHashMap 原子更新
+// 将 ConcurrentHashMap 对象中的某个值更改为最新的值
+do {
+    oldValue = map.get(word);
+    newValue = oldValue == null ? 1 : oldValue + 1;
+} while (!map.replace(word, oldValue, newValue)); // replace时，如果oldvalue被修改了，则返回false。
+// 同上
+map.putIfAbsent(word, new LongAdder());
+map.get(word).increment();
+// 同上
 map.putIfAbsent(word, new LongAdder()).increment();
+// 同上
 map.compute(word, (k, v) -> v == null ? 1 : v + 1);
-map.computeIfAbsent(word, k -> new LongAdder()).increment();
-map.merge(word, 1L, (existingValue, newValue) -> existingValue + newValue) ;
+// 同上
+map.computeIfAbsent(word, k -> new LongAdder()).increment(); // computeIfAbsent：在没有原值的情况下计算
+// 同上
+map.merge(word, 1L, (existingValue, newValue) -> existingValue + newValue); // 第二个参数表示键不存在时的初始值，第三个参数表示键存在时的操作(返回null，则删除该条目)
 map.merge(word, 1L, Long::sum);
 ```
+
+ConcurrentHashMap 的批操作
+
+有 3 种不同的操作:
+
+- 搜索(search) 为每个键或值提供一个函数，直到函数生成一个非 null 的结果。然后搜索终止，返回这个函数的结果。
+- 归约(reduce) 组合所有键或值，这里要使用所提供的一个累加函数。
+- forEach 为所有键或值提供一个函数。
+
+每个操作都有 4 个版本:
+
+- operationKeys : 处理键。
+- operatioriValues : 处理值。
+- operation: 处理键和值。
+- operatioriEntries: 处理Map.Entry对象。
+
+```java
+// 如果 map 中的元素数 > threshold ，则会分成多个线程，并行完成批操作。
+String result = map.search(threshold, (k, v) -> v > 1000 ? k : null);
+map.forEach(threshold, (k, v) -> System.out.println(k + " -> " + v));
+map.forEach(threshold, (k, v) -> k + " -> " + v, // Transformer
+    System.out::println); // Consumer
+// 转换器可以用作为一个过滤器。只要转换器返回null, 这个值就会被悄无声息地跳过。
+map.forEach(threshold, (k, v) -> v > 1000 ? k + " -> " + v : null, // Filter and transformer
+    System.out::println); // The nulls are not passed to the consumer
+// 计算所有值的和
+Long sum = map.reduceValues(threshold, Long::sum);
+// 计算最长键的长度
+Integer maxlength = map.reduceKeys(threshold, String::length, // Transformer
+    Integer::max); // Accumulator
+long sum = map.reduceValuesToLong(threshold, Long::longValue, // Transformer to primitive type
+    0, // Default value for empty map
+    Long::sum); // Primitive type accumulator
+```
+
+并发集视图
+
+没有 ConcurrentHashSet 类。静态 newKeySet 方法会生成一个Set<K>，这实际上是 ConcurrentHashMap<K, Boolean> 的一个包装器，所有映射值都为 Boolean.TRUE。
+
+```java
+Set<String> words = ConcurrentHashMap.<String>newKeySet();
+Set<String> words = map.keySet(1L); // set 中加入 key时，key的value的默认值
+words.add("Java");
+```
+
+写数组的拷贝
+
+- CopyOnWriteArrayList
+- CopyOnWriteArraySet
+
+如果有多个调用者（Callers）同时要求相同的资源（如内存或者是磁盘上的数据存储），他们会共同获取相同的指针指向相同的资源，直到某个调用者修改资源内容时，系统才会真正复制一份专用副本（private copy）给该调用者，而其他调用者所见到的最初的资源仍然保持不变。这过程对其他的调用者都是透明的（transparently）。
+
+并行数组算法
+
+Arrays类提供了大量并行化操作。
+
+```java
+String contents = new String(Fi1es.readAllBytes(Paths.get("alice.txt")), StandardCharsets.UTF_8); // Read file into string
+String[] words = contents.split("[\\P{L}]+"); // Split along nonletters
+Arrays.parallelSort(words);
+
+Arrays.parallelSort(words, Comparator.comparing(String::length));
+values.parallelSort(values.length / 2, values.length); // Sort the upper half
+
+Arrays.parallelSetAll(values, i -> i % 10); // i是数组索引，values的值为 0123456789012...
+
+// parallelPrefix 用对应一个给定结合操作的前缀的累加结果替换各个数组元素
+// values = [1，2,3,4,...]
+Arrays.parallelPrefix(values, (x, y) -> x * y); // [1,1x2,1x2x3,1x2x3x4, ...]
+```
+
+较早的线程安全集合
 
 任何集合类都可以通过使用同步包装器(synchronization wrapper)变成线程安全的
 
@@ -2630,17 +3001,156 @@ List<E> synchArrayList = Collections.synchronizedList(new ArrayList<E>());
 Map<K, V> synchHashMap = Col1ections.synchronizedMap(new HashMap<K, V>());
 ```
 
-Callable 与 Future
+结果集合的方法使用锁加以保护，提供了线程安全访问。
 
-看书(Future貌似可以看到线程的状态)
+### Callable 与 Future
+
+Callable 与 Runnable 类似，但是有返回值。
+
+Future 保存异步计算的结果。可以启动一个计算，将 Future 对象交给某个线程，Future 对象的所有者在结果计算好之后就可以获得它。
+
+FutureTask 包装器可将 Callable 转换成 Future 和 Runnable。 
+
+```java
+public interface Callable<V> {
+    V call() throws Exception;
+}
+public interface Future<V> {
+    V get() throws ...; // 对 get 的调用会发生阻塞，直到有可获得的结果为止。
+    V get(long timeout, TimeUnit unit) throws ...; // 调用超时，拋出 TimeoutException 异常。
+    void cancel (boolean mayInterrupt);
+    boolean isCancelled();
+    boolean isDone();
+}
+
+Callable<Integer> myComputation = ...;
+FutureTask<Integer> task = new FutureTask<Integer>(myComputation);
+Thread t = new Thread(task); // it's a Runnable
+t.start();
+Integer result = task.get();// it's a Future
+```
 
 ### 执行器
 
 一个线程池(thread pool)中包含许多准备运行的空闲线程。将 Runnable 对象交给线程池，就会有一个线程调用 run 方法。当 run 方法退出时，线程不会死亡，而是在池中准备为下一个请求提供服务。
 
+线程池可以限制并发线程的数目。
+
 执行器(Executor)类有许多静态工厂方法用来构建线程池。
 
 ![执行者工厂方法](images/Java/执行者工厂方法.png)
+
+```java
+// 向线程池提交任务
+Future<?> submit(Runnable task) // 返回的 Future 对象调用 get 方法，在完成的时候只是简单地返回 null。
+Future<T> submit(Runnable task, T result) // Future 的 get 方法在完成的时候返回指定的 result 对象。
+Future<T> submit(Callable<T> task) // Future对象将在计算结果准备好的时候得到它。
+
+// 关闭线程池
+shutdown() // 等待所有线程执行完毕
+shutdownNow() // 取消尚未开始的所有任务并试图中断正在运行的线程。
+
+ScheduledFuture<V> schedule(Cal1able<V> task, long time, Timellnit unit) // 预定在指定的时间之后执行任务
+ScheduledFuture<?> scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) // 预定在初始的延迟结束后，周期性地运行给定的任务，周期长度是 period
+ScheduledFuture<?> scheduleWithFixedDelay(Runnable task, long initialDelay, long delay, TimeUnit unit)
+
+List<Callab1e<T>> tasks = ...;
+List<Future<T>> results = executor.invokeAll(tasks);
+T oneResult = executor.invokeAny(tasks); // 其中一个返回结果，则计算停止。
+for (Future<T> result : results)
+    processFurther(result.get());
+
+// 收集给定执行器的结果，能先获得已完成的任务结果
+ExecutorCompletionService<T> service = new ExecutorCompletionService(executor);
+for (Callable<T> task : tasks)
+    service.submit(task);
+for (int i = 0; i < tasks.size(); i++)
+    processFurther(service.take().get()); // take()：移除下一个已完成的结果，如果没有任何已完成的结果可用则阻塞。
+service.poll() // 移除下一个已完成的结果，如果没有任何已完成的结果可用则返回null。
+```
+
+Fork-Join 框架
+
+```java
+// 如果计算会生成一个类型为 T 的结果，提供一个扩展 RecursiveTask<T> 的类
+// 如果没有结果，提供一个扩展 RecursiveAction 的类
+class Counter extends RecursiveTask<Integer> {
+    // ...
+    protected Integer compute() {
+        if (to - from < THRESHOLD) {
+            // solve problem directly，返回一个类型为Integer的结果
+        } else {
+            int mid = (from + to) / 2;
+            Counter first = new Counter(values, from, mid, filter); // values是待处理的数据，filter是处理方式
+            Counter second = new Counter(values, mid, to, filter);
+            invokeAll(first, second);
+            return first.join() + second.join();
+        }
+    }
+}
+
+public static void main(String[] args) {
+    Counter counter = ...;
+    ForkJoinPool pool = new ForkJoinPool();
+    pool.invoke(counter);
+    syso(counter.join());
+}
+```
+
+可完成 Future（重看）
+
+利用可完成 Future(CompletableFuture)，可以指定你希望做什么，以及希望以什么顺序执行这些工作。
+
+```java
+// 抽取一个页面的所有url
+public void CompletableFuture<String> readPage(URL url)
+public static List<URL> getLinks(String page)
+
+CompletableFuture<String> contents = readPage(url);
+CompletableFuture<List<URL>> links = contents.thenApply(Parser::getLinks) ;
+```
+
+![CompletableFuture增加动作](images/Java/CompletableFuture增加动作.png)
+
+### 同步器
+
+![同步器](images/Java/同步器.png)
+
+信号量
+
+通过 acquire 请求许可，通过 release 释放许可。任何线程都可以释放任意数目的许可。
+
+倒计时门栓 CountDownLatch
+
+让一个线程集等待直到计数变为0。倒计时门栓是一次性的。一旦计数为0，就不能再重用了。可以用来保证工作流程，如，“工作”线程阻塞在门栓上，直到“准备”线程调用countDown使门栓的技术变为1，则工作线程可以获得门栓并开始运行。
+
+障栅 CyclicBarrier
+
+CyclicBarrier类实现了一个集结点(rendezvous)称为障栅(barrier)。
+
+使用场景：大量线程运行在一次计算的不同部分的情形。当所有部分都准备好时，需要把结果组合在一起。当一个线程完成了它的那部分任务后，我们让它运行到障栅处。一旦所有的线程都到达了这个障栅，障栅就撤销，线程就可以继续运行。
+
+障栅可以重用。
+
+```java
+CyclicBarrier barrier = new CyclicBarrier(nthreads); // nthreads: 参与的线程数
+// 每个线程的工作
+public void run() {
+    doWork();
+    barrier.await(); // 带有超时参数的 barrier.await(100, TimeUnit.MILLISECONDS);
+}
+// 障栅动作(线程全部完成后，将要执行的动作)
+Runnable barrierAction = ...;
+CyclicBarrier barrier = new CyclicBarrier(nthreads, barrierAction);
+```
+
+交换器
+
+使用场景：一个线程向缓冲区填人数据，另一个线程消耗这些数据。当它们都完成以后，相互交换缓冲区。
+
+同步队列
+
+同步队列是一种将生产者与消费者线程配对的机制。当一个线程调用 SynchronousQueue 的 put 方法时，它会阻塞直到另一个线程调用 take 方法为止。
 
 ## 流库
 
@@ -3051,6 +3561,13 @@ serialver Employee
 
 可以使用序列化来克隆对象，将对象序列化再读出时，会创建这个对象的深拷贝。但是会比直接构造对象慢的多。
 
+Java的序列化算法
+
+1. 将对象实例相关的类元数据输出。
+2. 递归地输出类的超类描述直到不再有超类。
+3. 类元数据完了以后，开始从最顶层的超类开始输出对象实例的实际数据值。
+4. 从上至下递归输出实例的数据
+
 ### 操作文件(重看)
 
 Path 和 Files 类封装了在用户机器上处理文件系统所需的所有功能。
@@ -3240,7 +3757,7 @@ FileLock tryLock(long start, long size, boolean shared);
 lock.close();
 ```
 
-## 正则表达式(重看)
+## 正则表达式
 
 正则表达式(regular expression)用于指定字符串的模式，用于定位匹配某种特定模式的字符串。
 
@@ -3250,24 +3767,66 @@ lock.close();
 
 ![正则表达式语法续](images/Java/正则表达式语法续.png)
 
-例子
+简略规则
+
+- 字符类：匹配字符集中的某一个 `[A-Za-z]`；补集 `[^0-9]`；预定义的字符集，数字 `\d`，Unicode字母 `\p{L}`
+- `.` 匹配任意字符
+- `\` 转义字符
+- `^` 匹配一行的开头，`$` 匹配一行的结尾
+- 如果 XY 是正则表达式，则表示，任何X的匹配后面跟着Y的匹配；X|Y表示，任何X或Y的匹配
+- 量词，`X+` 一个或多个X的匹配；`X*` 0个或多个；`X?` 0个或1个。
+- 量词要匹配能够使整个匹配成功的最大可能的重复次数。后缀`?`表示使用吝啬匹配，即匹配最小的重复次数；后缀`+`表示贪婪匹配，即即使让整个匹配失败，也要匹配最大的重复次数。
+- 使用群组 `()` 定义子表达式，`([+-]?)([0-9]+)`。可以询问模式匹配器，让其返回每个组的匹配；或者使用 `\n` (n是群组号，从1开始)来引用某个群组。
+
+标志
+
+- Pattern.CASE_INSENSITIVE(r) ：匹配字符时忽略字母的大小写，默认情况下，大小写不敏感的匹配假定只有US-ASCII字符集中的字符才能进行。
+- Pattern.UNICODE_CASE(u) ：与 CASE_INSENSITIVE 组合使用时，用 Unicode 字母的大小写来匹配。
+- Pattern.UNICODE_CHARACTER_CLASS(U) ：选择 Unicode 字符类代替 POSIX，其中蕴含了 UNICODE_CASE。
+- Pattern.MULTILINE(m) ：在多行模式下，表达式^和$分别匹配一行的开始和结束，而不是整个输入的开头和结尾。
+- Pattern.UNIX_LINES(d) ：在多行模式中匹配^和$时，只有 `\n` 识别成行终止符。
+- Pattern.DOTALL(s) ：在dotall模式下，`.` 匹配所有字符，包括行终止符。默认情况下，`.` 不匹配行终止符。
+- Pattern.LITERAL ：该模式将被逐字地采纳，必须精确匹配，因字母大小写造成的差异除外。
+- Pattern.CANON_EQ ：考虑 Unicode 字符规范的等价性。例如，`\u030A` 就会匹配字符串 `?`。
+- Pattern.COMMENTS(x) 在这种模式下，空格符将被忽略掉，并且以#开始直到行末的注释也会被忽略掉。通过嵌入的标记表达式也可以开启Unix的航模式
+
+群组
+
+群组0是整个输入，第一个实际群组的索引是1。嵌套群组是按前括号排序的。
+
 
 ```java
+// 测试 input 是否和 patternString 匹配
 Pattern pattern = Pattern.compile(patternString);
 Matcher matcher = pattern.matcher(input);
 if(matcher.matches()){ // 是否有匹配
-    int g = matcher.groupCount(); // 群组个数
-    matcher.start(i); // 群组i的开始索引
-    matcher.end(i); // 群组i的结束索引
 }
-
+// 设置标志
+Pattern pattern = Pattern.compile(expression, Pattern.CASE_INSENSITIVE + Pattern.UNICODE_CASE);
+String regex = "(?iU:expression)";
+// 在集合或流中匹配元素(将模式转换为谓词)
+Stream<String> strings = ...;
+Stream<String> result = strings.filter(pattern.asPredicate());
+// 群组。Matcher 对象
+int start(int groupIndex) // 群组的开始索引
+int end(int groupIndex) // 群组的结束索引
+String group(int groupIndex) // 抽取匹配的字符串
+while(matcher.find()) { // 逐个查找匹配
+    int start = matcher.start();
+    int end = matcher.end();
+    String match = matcher.group();
+}
+// 替换
 matcher.replaceAll("#"); // 将所有匹配的字符串替换成#
+matcher.replaceAll("\$1"); // 将匹配的字符串替换成第1个群组的内容
+matcher.replaceAll(Matcher.quoteReplacement(str)); // 不将\$解释成群组的替换符
+matcher.replaceFirst(""); // 只替换第一次出现的匹配字符串
+// 分割
+Pattern pattern = Pattern.compile("...");
 String[] tokens = pattern.split(input); // 将input字符串按照pattern切分
-Stream<String> tokens = pattern.splitAsStream(input);
-String[] tokens = input.split("\\s*,\\s*");
+Stream<String> tokens = pattern.splitAsStream(input); // 同上，惰性获取
+String[] tokens = input.split("\\s*,\\s*"); // 使用String.split方法
 ```
-
-群组0是整个输入，第一个实际群组的索引是1。嵌套群组是按前括号排序的。
 
 ## 网络编程
 
@@ -3393,9 +3952,9 @@ try(
         if (line.trim().equals("BYE"))
             done = true;
     }
+    incoming.close(); // 关闭链接
 }
-
-incoming.close(); // 关闭链接
+// 备注：使用 out.write("...") 客户端无法接收到信息，原因是 SocketOutputStream 及其父类没有覆写 flush 方法。而 newLine 会自动调用flush方法。
 ```
 
 为多个客户端服务
@@ -3644,7 +4203,7 @@ public class MailUtils {
 
 ### 远程调用
 
-创建远程服务的步骤
+创建RMI远程服务的步骤
 
 1. 创建远程接口
     1. Remote是个标记性接口，你需要继承它并创建自己的接口来实现远程调用的方法
@@ -3667,15 +4226,16 @@ public interface MyRemote extends Remote{
 public class MyRemoteImpl extends UnicastRemoteObject implements MyRemote {
 	public String sayHello(){
 		return "Server says, 'hey'";
-}
+    }
+
 	public MyRemoteImpl() throws RemoteException{}
 
-public static void main(String[] args){
-	try{
-		MyRemote service = new MyRemoteImpl();
-		Naming.rebind("Remote Hello", service);//帮服务命名（客户端会靠名字查询registry）并向RMI registry注册
-	}catch(Exception ex){...}
-}
+    public static void main(String[] args){
+    	try{
+    		MyRemote service = new MyRemoteImpl();
+    		Naming.rebind("Remote Hello", service);//帮服务命名（客户端会靠名字查询registry）并向RMI registry注册
+    	}catch(Exception ex){...}
+    }
 }
 ```
 
@@ -3689,7 +4249,7 @@ public static void main(String[] args){
 1. 客户端查询RMI registry
 
 ```java
-MyRemote service = (MyRemote) Naming.lookup("rmi://127.0.0.1/Remote Hello")//Remote Hellos是注册的名字
+MyRemote service = (MyRemote) Naming.lookup("rmi://127.0.0.1/Remote Hello") // Remote Hellos是注册的名字
 ```
 
 2. RMI registry返回stub对象
@@ -3753,13 +4313,14 @@ SimpleDateFormat
 // 将字符串转换成Date
 String date = "1992-07-13";
 // 需转换的字符串中，日期的格式
-SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 Date result = sdf.parse(date);// result = Mon Jul 13 00:00:00 CST 1992
-
-// 将Date类转成字符串
-result.toString();
 // 定制Date显示的格式，转换为sdf定义的格式
 String formatDate = sdf.format(result);// formatDate = 1992-07-13
+// 制定时区
+sdf.setTimeZone(TimeZone.getTimeZone("GMT+8"));
+// 修改本地时区
+TimeZone.setDefault(TimeZone.getTimeZone("GMT+8"));
 
 Date date = new Date(); 
 DateFormat shortDateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT,DateFormat.SHORT); 
@@ -3768,6 +4329,8 @@ DateFormat longDateFormat = DateFormat.getDateTimeInstance(DateFormat.LONG,DateF
 DateFormat fullDateFormat = DateFormat.getDateTimeInstance(DateFormat.FULL,DateFormat.FULL); 
 shortDateFormat.format(date);
 ```
+
+somedate.getTime()返回的是一个UTC的unix timestamp秒数，与时区无关；而转换为字符串后，就和时区相关了。
 
 ## 国际化
 
@@ -3953,7 +4516,11 @@ public @interface MyTest{
 
 将类加载到虚拟机中的时候检查类的完整性。需要与安全管理器（负责控制代码运行）协同工作。
 
-类加载过程，假设从 MyProgram.class 开始运行
+类加载过程
+
+虚拟机只加载程序执行时所需要的类文件。
+
+假设从 MyProgram.class 开始运行
 
 1. 加载 MyProgram 类文件中的内容
 2. 加载 MyProgram 类的超类，或者依赖的类。加载某个类所依赖的所有类的过程称为类的解析。
@@ -3966,25 +4533,62 @@ public @interface MyTest{
 - 扩展类加载器(Extension)，从 `jre/lib/ext` 目录加载“标准的扩展”。
 - 系统类加载器(System)，用于加载应用类，从 CLASSPATH 环境变量或 -classpath 命令行选项设置的类路径中加载类。
 
+类加载器的层次结构
+
 除引导类加载器外，每个类加载器都有一个父类加载器。先由父类加载，加载不成功时，再由该加载器加载。
 
-每个线程都有一个对类加载器的引用，称为上下文类加载器。
+加载层次是
+
+```
+Bootstrap 类加载器
+↑
+Extension 类加载器
+↑
+System 类加载器
+↑
+Plugin 类加载器
+```
+
+每个线程都有一个对类加载器的引用，称为上下文类加载器。主线程的上下文类加载器是系统类加载器。每个线程创建时，上下文加载器会被设置成创建该线程的上下文加载器。
 
 ```java
-// 设置线程的类加载器
+// 设置线程的上下文类加载器
 Thread t = Thread.currentThread();
 t.setContextClassLoader(loader);
-// 获取线程的类加载器
+// 获取线程的上下文类加载器
 ClassLoader loader = t.getContextClassLoader();
 Class cl = loader.loadClass(className);
+// 加载插件中的类
+URL url = new URL("file:///path/to/plugin.jar");
+URLClassLoader pluginLoader = new URLClassLoader(new URL[] {url});
+Class<?> cl = pluginLoader.loadClass("mypackage.MyClass");
 ```
+
+在虚拟机中，类是由它的全名和类加载器来确定的。可以有两个类，它们的类名和包名都是相同的。
+
+编写自己的类加载器
+
+```java
+public class MyClassLoader extends ClassLoader {
+    @Override
+    findClass(String className) {
+        // ...
+    }
+}
+```
+
+loadClass 方法用于将类的加载操作委托给父类加载器去进行。只有父类加载器无法加载时，才调用findClass方法。
 
 ## 参考资料
 
 [JDK下载](https://www.oracle.com/technetwork/java/javase/downloads)
+
+[jdk安装](https://www.cnblogs.com/yjd_hycf_space/p/7885099.html)
 
 《core Java》
 
 《Head First Java》
 
 《Java程序设计语言》
+
+[Jar 文件详解](https://blog.csdn.net/zhifeiyu2008/article/details/8829637)

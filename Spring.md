@@ -62,6 +62,11 @@ Spring容器
 
 1. bean工厂(org.springframework.beans.factory.BeanFactory)(低级别)
 2. 应用上下文(org.springframework.context.ApplicationContext)(常用)
+	1. AnnotationConfigApplicationContext: 从一个或多个基于Java的配置类中加载Spring应用上下文。
+	2. AnnotationConfigWebApplicationContext: 从一个或多个基于Java的配置类中加载Spring Web应用上下文。
+	3. ClassPathXmlApplicationContext: 从类路径下的一个或多个XML配置文件中加载上下文定义，把应用上下文的定义文件作为类资源。
+	4. FileSystemXmlapplicationcontext: 从文件系统下的一个或多个XML配置文件中加载上下文定义。
+	5. XmlWebApplicationContext: 从Web应用下的一个或多个XML配置文件中加载上下文定义。
 
 Spring 容器全权负责对象的创建和组装。
 
@@ -72,7 +77,7 @@ Spring 容器全权负责对象的创建和组装。
 3. 隐式的bean发现机制和自动装配（注解配置）
 4. 直接编码（底层实现方式）
 
-### 自动装配(注解)
+### 自动装配（注解方式）
 
 Spring从2个角度实现自动化装配
 
@@ -127,11 +132,11 @@ import javax.inject.Named;
 
 - 域（Filed）（即，属性（Property））
 - 构造方法定义
-- 方法定义
-
-适用于任何方法，不限于setter方法
+- 方法定义。适用于任何方法，不限于setter方法
 
 `@Autowired(required=false)`：Spring会尝试自动装配，如果没有匹配的bean，会让这个bean处在未装配状态。
+
+Java中与之类似的注解是 @Inject
 
 在没有扫描的情况下，加入以下配置，就可以使用属性注入相关的注解
 
@@ -176,9 +181,23 @@ import javax.inject.Named;
 如何消除？
 
 1. 使用 @Primary 标识首选的bean
-2. 使用 @Qualifier 限定自动装配的bean。注解的参数就是想要注入的bean的ID
+2. 使用 @Qualifier 限定自动装配的bean。注解的参数就是想要注入的bean的限定符(默认的限定符是id)
 
 还可以使用 @Qualifier 自定义类的限定符，参数即为指定的限定符。
+
+```xml
+<bean id="iceCream" calss="..." primary="true"/>
+```
+
+```java
+@Autowired
+@Qualifier("iceCream")
+public void setDessert(Dessert dessert){ ... }
+
+// 自定义限定符
+@Component
+@Qualifier("myQualifier")
+```
 
 ### JavaConfig
 
@@ -189,11 +208,11 @@ import javax.inject.Named;
 public class MockConfiguration{ 
 　　@Bean 
 　　public MockService mockService(){ 
-　　　　return new MockServiceImpl(dependencyService()): 
+　　　　return new MockServiceImpl(dependencyService());
 　　}
 　　@Bean 
-　　public DependencyService dependencyService(){ 
-　　　　return new DependencyServiceImpl(): 
+　　public DependencyService dependencyService(SomeClass aClass){ 
+　　　　return new DependencyServiceImpl(aClass);
 　　}
 } 
 ```
@@ -605,9 +624,10 @@ ApplicationContext container = new FileSystemXmlApplicationContext("conf/**/*.sp
 
 @Profile
 
-指定某个bean属于哪一个profile。应用在类级别上。spring3.2+可以应用在方法级别。
+指定某个bean属于哪一个profile，应用在类级别上。spring3.2+可以应用在方法级别。
 
 ```java
+@Configuration
 @Profile("dev")
 public class DataSourceConfig{}
 // 这个配置类中的bean只有当 dev profile 激活时才会创建。
@@ -620,8 +640,14 @@ public class DataSourceConfig{}
 使用 `<beans>` 元素的profile属性， `<beans>` 元素可以嵌套。
 
 ```xml
+<!-- 配置放在单独的xml文件中 -->
+<beans ... profile="dev"></beans>
+
+<!-- 所有bean定义放在同一个xml文件中 -->
 <beans>
 	<beans profile="dev"></beans>
+	<beans profile="qa"></beans>
+	<beans profile="prod"></beans>
 </beans>
 ```
 
@@ -650,10 +676,19 @@ Spring在确定哪个profile处于激活状态时，需要依赖2个属性
 		<param-name>spring.profiles.default</param-name>
 		<param-value>dev</param-value>
 	</context-param>
+
+	<servlet>
+		...
+		<!-- 为Servlet设置默认的profile -->
+		<init-param>
+			<param-name>spring.profiles.default</param-name>
+			<param-value>dev</param-value>
+		</init-param>
+	</servlet>
 </web-app>
 ```
 
-在测试环境中，可以使用@ActiveProfiles激活profile
+在集成测试时（如，在JUnit测试类上），可以使用 @ActiveProfiles 激活 profile
 
 ```java
 @ActiveProfiles("dev")
@@ -661,9 +696,9 @@ Spring在确定哪个profile处于激活状态时，需要依赖2个属性
 
 ### 条件化的bean
 
-@Conditional 注解应用到带有@Bean注解的方法上，如果给定的条件计算为true就会创建这个bean，否则忽略这个bean
+@Conditional 注解应用到带有 @Bean 注解的方法上，如果给定的条件计算为 true 就会创建这个 bean，否则忽略这个 bean
 
-设置给@Conditional 的类可以是任意实现了Condition接口的类。
+设置给 @Conditional 的类可以是任意实现了 Condition 接口的类。
 
 ```java
 @Bean
@@ -688,7 +723,7 @@ ConditionContext是一个接口，方法如下
 - getResourceLoader()：检查资源
 - getClassLoader()：检查类是否存在
 
-AnnotatedTypeMetadata是一个接口，可以检查带有@Bean的方法上还有什么注解。
+AnnotatedTypeMetadata 是一个接口，可以检查带有 @Bean 的方法上的注解河属性。
 
 ### bean的作用域(Scope)
 
@@ -698,15 +733,20 @@ Spring定义的作用域
 - 原型(Prototype)：每次注入或者通过Spring ApplicationContext 获取的时候，都会创建一个新的bean实例
 - 会话(Session)：在Web应用中，为每个会话创建一个bean实例
 - 请求(Request)：在Web应用中，为每个请求创建一个bean实例
+- 全局会话(global session)：只有应用在基于portlet的Web应用程序中才有意义
 
 可使用@Scope注解来改变作用域
 
 ```java
 // 更安全不容易出错
-@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-@Scope(value=WebApplicationContext.SCOPE_SESSION, proxyMode=ScopedProxyMode.INTERFACES)
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE) // 原型
+@Scope(value=WebApplicationContext.SCOPE_SESSION, proxyMode=ScopedProxyMode.INTERFACES) // 会话
 // 也可以使用
 @Scope("prototype")
+```
+
+```xml
+<bean id="notedpad" class="..." scope="prototype"/>
 ```
 
 会话作用域和请求作用域的装配问题
@@ -722,6 +762,8 @@ XML的设置方式
 <bean id="" class="" scope="session">
 	<!-- 默认会使用CGLib创建目标类的代理 -->
 	<aop:scoped-proxy />
+</bean>
+<bean id="" class="" scope="session">
 	<!-- 要求生成基于接口的代理 -->
 	<aop:scoped-proxy proxy-target-class="false" />
 </bean>
@@ -778,7 +820,7 @@ bean的scope属性
 @PropertySource("classpath:/com/soundsystem/app.properties")
 public class ExpressiveConfig{
 	@Autowired
-	Environment env;
+	Environment env; // 属性文件会加载到这里
 	
 	@Bean
 	public BlankDisc disc(){
@@ -789,15 +831,16 @@ public class ExpressiveConfig{
 
 // 直接取得某个类型的值，参数依次为：key、返回值类型、默认值
 int connectionCount = env.getProperty("db.connection.count", Integer.class, 30);
-
-// 获得的属性必须要定义
+// 获得的属性必须要定义，否则抛异常
 env.getRequiredProperty("disc.title");
-
 // 检查某个属性是否存在
 boolean titileExists = env.containsProperty("disc.title");
-
 // 将属性解析为类
 Class<CompactDisc> cdClass = env.getPropertyAsClass("disc.class", CompactDisc.class);
+
+String[] getActiveProfiles() // 返回激活profile名称的数组;
+String[] getDefaultProfiles() // 返回默认profile名称的数组;
+boolean acceptsProfiles(String... profiles) // 如果environment支持给定profile的话，就返回true。
 ```
 
 #### 属性占位符
@@ -810,7 +853,7 @@ Class<CompactDisc> cdClass = env.getPropertyAsClass("disc.class", CompactDisc.cl
 <bean id="" class="" c:_title="${disc.title}" />
 ```
 
-自动装配使用@Value注解
+自动装配使用 @Value 注解
 
 ```java
 public BlankDisc(@Value("${disc.title}") String title, @Value("${disc.artist}") String artist){
@@ -829,9 +872,9 @@ public static PropertySourcesPlaceholderConfigurer placeholderConfigurer(){
 
 #### Spring表达式语言（Spring3.0+）
 
-Spring Expression Language
+Spring Expression Language(SpEL)
 
-表达式要放在"#{...}"中，表达式会在运行时计算值
+表达式要放在 `#{...}` 中，表达式会在运行时计算值
 
 示例
 
@@ -842,7 +885,24 @@ Spring Expression Language
 #{sgtPeppers.artist}
 // 系统属性disc.title的值
 #{systemProperties['disc.title']}
+```
 
+使用
+
+```java
+public BlankDisc(@Value("#{systemProperties['disc.title']}") String title, @Value("#{systemProperties['disc.artist']}") String artist){
+	this.title = title;
+	this.artist = artist;
+}
+```
+
+```xml
+<bean id="" class="" c:_title="#{systemProperties['disc.title']}" />
+```
+
+基础表达式
+
+```java
 // 表示字面值
 #{1}
 #{3.14}
@@ -861,22 +921,9 @@ Spring Expression Language
 // 使用"?."运算符，如果元素为null，则不调用右边的方法
 #{sgtPeppers.getArtist()?.toUpperCase()}
 
-// 使用类型。T()运算符的结果是一个Class对象，能够访问目标类型的静态方法和常量
+// 访问类作用域的方法和常量。T()运算符的结果是一个Class对象，能够访问目标类型的静态方法和常量
 #{T(java.lang.Math).PI}
 #{T(java.lang.Math).random()}
-```
-
-使用
-
-```java
-public BlankDisc(@Value("#{systemProperties['disc.title']}") String title, @Value("#{systemProperties['disc.artist']}") String artist){
-	this.title = title;
-	this.artist = artist;
-}
-```
-
-```xml
-<bean id="" class="" c:_title="#{systemProperties['disc.title']}" />
 ```
 
 SpEL运算符
@@ -889,20 +936,17 @@ SpEL运算符
 #{disc.title + 'by' + disc.artist}
 // 表达式计算结果是boolean值
 #{counter.total == 100}
+#{counter.total eq 100}
+// 三元运算符
+#{scope > 100 ? "yes" : "no"}
 // disc.title 为 null， 则表达式结果为'Red'
 #{disc.title ?: 'Red'}
-```
 
-正则表达式
-
-```java
+// 正则表达式
 // 检查admin.email是否符合正则表达式的规范，返回boolean值
 #{admin.email matches '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.com'}
-```
 
-计算集合
-
-```java
+// 计算集合
 // 取出 jukebox bean 的 songs集合的第4个元素中的title属性
 #{jukebox.songs[3].title}
 // 随机取一个元素的title属性
@@ -1415,9 +1459,9 @@ Spring AOP支持 singleton、perthis、pertarget三种
 
 在目标对象的生命周期里有多个点可以进行织入：
 
-- 编译期
-- 类加载期
-- 运行期
+- 编译期。切面在目标类编译时被织入。这种方式需要特殊的编译器。AspectJ的织入编译器就是以这种方式织入切面的。
+- 类加载期。切面在目标类加载到JVM时被织入。这种方式需要特殊的类加载器(ClassLoader)。
+- 运行期。切面在应用运行的某个时刻被织入。一般情况下，在织入切面时，AOP容器会为目标对象动态地创建一个代理对象。Spring AOP就是以这种方式织入切面的。
 
 
 ### 底层原理
@@ -1455,13 +1499,13 @@ Spring 的通知是Java编写的。Spring在运行时通知对象。Spring AOP �
 使用 AspectJ 指示器
 
 ```java
-//"*"表示返回任意类型，".."表示含有任意个参数。within表示范围
+//"*"表示返回任意类型，".."表示含有任意个参数。within表示范围，在concert包下的类
 execution(* concert.Performance.perform(..)) && within(concert.*)
-//bean限定bean的ID
+// 限定bean的id不能是woodstock
 execution(* concert.Performance.perform()) and !bean('woodstock')
 ```
 
-AspectJ的Pointcut表达式支持"&&", "||", "!"逻辑运算符
+AspectJ的Pointcut表达式支持`&&`, `||`, `!` 逻辑运算符，可以用 and, or, not 代替
 
 Spring AOP支持的AspectJ的Pointcut表达式
 
@@ -1551,7 +1595,6 @@ execution(* concert.Performance.perform()) and bean('woodstock')
 |aop:config|顶层的aop配置元素，aop元素大都包含在该元素内|
 |aop:declare-parents|为被通知对象引入额外的方法|
 
-
 在xml中声明切面
 
 ```xml
@@ -1631,6 +1674,8 @@ Advice
 
 Introduction
 
+为Java类引入新功能
+
 属性
 
 - types-matching：指定要对哪些目标对象进行Introduction逻辑的织入
@@ -1640,14 +1685,14 @@ Introduction
 ```xml
 <aop:declare-parents
 	types-matching="cn.spring21.unveilspring.target.*"
-		implement-interface="cn.spring21.unveilspring.introduction.ICounter"
-		default-impl="cn.spring21.unveilspring.introduction.CounterImpl" />
+	implement-interface="cn.spring21.unveilspring.introduction.ICounter"
+	default-impl="cn.spring21.unveilspring.introduction.CounterImpl" />
 		
 <!-- 或者使用delegate-ref属性引用一个Spring bean -->
 <aop:declare-parents
 	types-matching="cn.spring21.unveilspring.target.*"
-		implement-interface="cn.spring21.unveilspring.introduction.ICounter"
-		delegate-ref="counterImpl" />
+	implement-interface="cn.spring21.unveilspring.introduction.ICounter"
+	delegate-ref="counterImpl" />
 
 <bean id="counterImpl" class="cn.spring21.unveilspring.introduction.CounterImpl" />
 ```
@@ -1671,8 +1716,10 @@ public class ConcertConfig{
 <!-- 需要引入aop命名空间 -->
 <beans>
 	<context:component-scan base-package="" />
-	<!-- 启动AspectJ自动代理 -->
+	<!-- 启动AspectJ自动代理，为使用@Aspect注解的bean创建代理 -->
 	<aop:aspectj-autoproxy />
+	<!-- 声明切面类的bean -->
+	<bean class="..." />
 </beans>
 ```
 
@@ -1693,13 +1740,17 @@ AspectJ提供了5个注解来定义通知
 @Aspect
 public class Audience{
 	@Pointcut("execution(* concert.Performance.perform(..))")
-	// performance是空方法，为方便添加@Pointcut注解
-	public void performance(){}
+	public void performance() {} // performance是空方法，为方便添加@Pointcut注解
+	
 	// Before是通知，参数是切点。
 	@Before("performance()")
 	public void takeSeats(){
 		//code
 	}
+
+	// 参数可以直接是切点表达式
+	@After("execution(** concert.Performance.perform(..))")
+	public void applause(){...}
 }
 ```
 
@@ -1749,6 +1800,7 @@ public void afterThrowing(JoinPoint joinpoint, RuntimeException e){
 @AfterReturning有一个属性returning，将返回值绑定到具体方法参数上。
 
 @Around
+
 第一个参数必须是ProceedingJoinPoint类型
 
 ```java
@@ -1759,10 +1811,13 @@ public class Audience{
 	
 	@Around("performance()")
 	public void watchPerformance(ProceedingJoinPoint jp){
-		// ...
-		// 调用被通知的方法
-		jp.proceed();
-		// ...
+		try {
+			// ... 方法执行前的操作
+			jp.proceed(); // 调用被通知的方法，不调用会被阻塞
+			// ... 方法执行后的操作
+		} catch (Throwable e) {
+			// ...
+		}	
 	}
 }
 ```
@@ -1783,13 +1838,12 @@ Introduction，引入新功能
 @Aspect
 public class IntroductionAspect{
 	@DeclareParents(
-		value="...MockTask",
-		defaultImpl=CounterImpl.class
+		value="...MockTask", // value属性指定了哪种类型的bean要引入该接口
+		defaultImpl=CounterImpl.class // defaultImpl属性指定了为引入功能提供实现的类
 	)
-	public ICounter counter;
+	public ICounter counter; // 指明了要引入的接口
 }
 
-// 将DefaultEncoreable应用到concert.Performance+
 @Aspect
 public class EncoreableIntroducer{
 	@DeclareParents(value="concert.Performance+", defaultImpl=DefaultEncoreable.class)
@@ -1830,7 +1884,7 @@ public aspect CriticAspect{
 </bean>
 ```
 
-AspectJ切面提供了一个静态的aspectOf()方法，该方法返回切面的一个单例。
+AspectJ切面是由AspectJ在运行期创建的，Spring不能负责创建。AspectJ切面提供了一个静态的aspectOf()方法，该方法返回切面的一个单例，以获得切面的引用。
 
 ### 扩展
 
@@ -1884,14 +1938,10 @@ Spring提供了在上下文中配置数据源bean的多种方式，包括
 jee命名空间下的 `<jee:jndi-lookup>` 元素可以用于检索JNDI中的任何对象，并将其作为Spring的bean。
 
 ```xml
+<!-- jndi-name：指定JNDI中资源的名称。
+	resource-ref：如果应用程序运行在Java应用服务器中，设置为true，这样jndi-name会自动添加"java:comp/env/"前缀。 -->
 <jee:jndi-lookup id="dataSource" jndi-name="/jdbc/SpitterDS" resource-ref="true" />
 ```
-
-属性
-
-jndi-name：指定JNDI中资源的名称。
-
-resource-ref：如果应用程序运行在Java应用服务器中，设置为true，这样jndi-name会自动添加"java:comp/env/"前缀。
 
 JavaConfig方式
 
@@ -2010,8 +2060,8 @@ BasicDataSource的池配置属性
 
 Spring提供了3个数据源
 
-- DriverManagerDataSource：每个连接请求时都会返回一个新建的连接
-- SimpleDriverDataSource：与DriverManagerDataSource工作方式类似，直接使用JDBC驱动
+- DriverManagerDataSource：每个连接请求时都会返回一个新建的连接，没有进行池化管理。
+- SimpleDriverDataSource：与DriverManagerDataSource工作方式类似，直接使用JDBC驱动。
 - SingleConnectionDataSource：每个连接请求时都会返回同一个连接（只有一个连接的数据源）。
 
 XML配置方式
@@ -2031,21 +2081,24 @@ JavaConfig方式
 public DataSource dataSource(){
 	DriverManagerDataSource ds = new DriverManagerDataSource();
 	ds.setDriverClassName("org.h2.Driver");
-	ds.setUrl("");
+	ds.setUrl("jdbc:...");
 	ds.setUsername("");
 	ds.setPassword("");
 	return ds;
 }
 ```
 
+不适合生产环境
+
 #### 使用嵌入式的数据源
 
-嵌入式数据库作为应用的一部分运行，而不是应用连接的独立数据库服务区。
+嵌入式数据库作为应用的一部分运行，而不是应用连接的独立数据库服务区。适用于开发和测试，因为每次启动应用都会重新填充测试数据。
 
 Spring的jdbc命名空间能够简化嵌入式数据库的配置。
 
 ```xml
 <beans ...>
+	<!-- 嵌入式的 H2 数据库。会暴露一个id为dataSource的数据源 -->
 	<jdbc:embeded-database id="dataSource" type="H2">
 		<!-- 引入在数据库中创建表的sql语句 -->
 		<jdbc:script location="com/habum/a/spitter/db/jdbc/schema.sql" />
@@ -2074,15 +2127,16 @@ public DataSource dataSource(){
 @Configuration
 public class DataSourceConfiguration{
 	// 开发环境
-  @Profile("development")
-  @Bean
-  public DataSource embededDataSource(){
-    return new EmbededDatabaseBuilder()
-      .setType(EmbededDatabaseType.H2)
-      .addScript("classpath:schema.sql")
-      .addScript("classpath:test-data.sql")
-      .build();
-  }
+	@Profile("development")
+	@Bean
+	// 嵌入式数据库
+	public DataSource embededDataSource(){
+	return new EmbededDatabaseBuilder()
+	  .setType(EmbededDatabaseType.H2)
+	  .addScript("classpath:schema.sql")
+	  .addScript("classpath:test-data.sql")
+	  .build();
+	}
   
   // QA环境
   @Profile("qa")
@@ -2111,6 +2165,20 @@ public class DataSourceConfiguration{
 }
 ```
 
+XML 配置
+
+```xml
+<beans profile="development">
+	<!-- 嵌入式数据库的配置 -->
+</beans>
+<beans profile="qa">
+	<!-- DBCP 数据库的配置 -->
+</beans>
+<beans profile="production">
+	<!-- JNDI 数据库的配置 -->
+</beans>
+```
+
 #### 自定义DataSource
 
 《spring揭秘》14章p299
@@ -2130,13 +2198,44 @@ public class GenericDao extends JdbcDaoSupport implements IDaoInterface{
 
 ### JDBC模板
 
+JDBC 建立在SQL之上。允许使用数据库的所有特性，可以对数据访问的性能进行调优，而这是其他框架不鼓励甚至禁止的。
+
 共有3个模板类供选择
 
 - JdbcTemplate：基本模板，支持数据库访问和基于索引参数的查询
 - NamedParameterJdbcTemplate：执行查询时可用将值以命名参数的方式绑定到SQL，而不是简单的索引参数
-- SimpleJdbcTemplate：利用Java5的特性简化JDBC模板的使用（已废弃）
+- SimpleJdbcTemplate：（已废弃）利用Java5的特性简化JDBC模板的使用
 
 #### JdbcTemplate
+
+配置
+
+JavaConfig方式
+
+```java
+@Bean
+public JdbcTemplate jdbcTemplate(DataSource dataSource){
+	return new JdbcTemplate(dataSource);
+}
+```
+
+使用
+
+```java
+@Repository
+public class SomeRepository {
+	private JdbcOperations jdbcOperations; // dbcOperations是一个接口，定义了JdbcTemplate所实现的操作。使用接口实现松耦合。
+	@Inject
+	public SomeRepository(JdbcOperations jdbcOperations){
+		this.jdbcOperations = jdbcOperations;
+	}
+
+	public void addSomeData(SomeObject someObject){
+		jdbcOperations.update(INSERT_SQL, someObject.getUsername(), someObject.getId());
+	}
+}
+```
+
 
 继承层次
 
@@ -2176,18 +2275,31 @@ SQLExceptionTranslator负责对SQLException转译到统一的异常体系(DataAc
 
 《spring揭秘》p271
 
-##### 配置
 
-JavaConfig方式
+
+##### 查询数据
 
 ```java
-@Bean
-public JdbcTemplate jdbcTemplate(DataSource dataSource){
-	return new JdbcTemplate(dataSource);
+public SomeObject findOne(long id) {
+	return jdbcOperations.queryForObject(SELECT_OBJECT_BY_ID, new SomeObjectRowMapper(), id); // 将结果映射到对象
 }
-```
 
-#####查询数据
+private static final class SomeObjectRowMapper implements RowMapper<SomeObject> {
+	public SomeObject mapRow(ResultSet rs, int rowNum) throws SQLException {
+		return new SomeObject(rs.getLong("id"), rs.getString("username")); // 绑定参数
+	}
+}
+
+// RowMapper可以使用Lambda表达式
+public SomeObject findOne(long id) {
+	return jdbcOperations.queryForObject(
+		SELECT_OBJECT_BY_ID,
+		(rs, rowNum) -> {
+			return new SomeObject(rs.getLong("id"), rs.getString("username")); // 绑定参数
+		},
+		id); // 将结果映射到对象
+} 
+```
 
 queryForObject()
 
@@ -2196,8 +2308,6 @@ queryForObject()
 - String对象，SQL语句
 - RowMapper对象，用来从ResultSet中提取数据并构建域对象
 - 可变参数列表，列出了要绑定到查询上的索引参数值（SQL语句中的参数）
-
-RowMapper可以使用Lambda表达式
 
 用于查询的回调接口定义主要有3种
 
@@ -2260,7 +2370,7 @@ jdbcTemplate.query(sql, new RowCallbackHandler(){
 })
 ```
 
-#####更新数据
+##### 更新数据
 
 插入、更新、删除操作，使用JdbcTemplate的update()模板方法。返回值为操作所影响的记录数目。
 
@@ -2323,7 +2433,7 @@ public int[] insertNewCustomers(final List customers){
 
 《spring揭秘》p281
 
-#### NamedParameterJdbcTemplate
+#### 命名参数 NamedParameterJdbcTemplate
 
 NamedParameterJdbcTemplate 支持使用命名参数，使用更有语义的符号来代替SQL中的?参数占位符。
 
@@ -2339,15 +2449,13 @@ public NamedParameterJdbcTemplate jdbcTemplate(DataSource dataSource){
 使用
 
 ```java
+// SQL语句
+private static final String SQL_INSERT = "insert into tablename(username, password, fullname) values (:username, :password, :fullname)";
+// 数据源
+NamedParameterJdbcTemplate npJdbcTemplate;
 public void addSpitter(Spitter spitter){
-  // 数据源
-  DataSource dataSource = ...;
-NamedParameterJdbcTemplate npJdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
-  // SQL语句
-  private static final String SQL_INSERT = "insert into tablename (username, password, fullname)" + "values (:username, :password, :fullname)";
-  // 参数
 	Map<String, Object> paramMap = new HashMap<String, Object>();
-	paramMap.put("username", sppiter.getUsername());
+	paramMap.put("username", sppiter.getUsername()); // 绑定参数
 	paramMap.put("password", sppiter.getPassword());
 	paramMap.put("fullname", sppiter.getFullName());
 	// 执行
@@ -2389,6 +2497,168 @@ ${jdbc.name}
 《spring揭秘》第14章
 
 
+
+
+
+
+
+## ORM
+
+使用 对象-关系映射 持久化数据
+
+### 在 Spring 中集成 Hibernate
+
+使用Hibernate所需的主要接口是org.hibernate.Session。Session接口提供了基本的数据访问功能，如保存、更新、删除以及从数据库加载对象的功能。
+
+Spring提供了三个Session工厂bean供我们选择:
+
+- org.springframework.orm.hibernate3.LocalSessionFactoryBean
+- org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean
+- org.springframework.orm.hibernate4.LocalSessionFactoryBean
+
+略，见《Spring in Action 4》11章
+
+### Spring 与 Java 持久化 API
+
+基于JPA的应用程序需要使用EntityManagerFactory的实现类来获取EntityManager实例
+
+JPA定义了两种类型的实体管理器:
+
+- 应用程序管理类型(Application-managed):当应用程序向实体管理器工厂直接请求实体管理器时，工厂会创建一个实体管理器。在这种模式下，程序要负责打开或关闭实体管理器并在事务中对其进行控制。适合于不运行在Java EE容器中的独立应用程序。
+- 容器管理类型(Container-managed):实体管理器由 Java EE 创建和管理。应用程序根本不与实体管理器工厂打交道。相反，实体管理器直接通过注入或JNDI来获取。容器负责配置实体管理器工厂。适用于 Java EE 容器，在这种情况下会希望在persistence.xml指定的JPA配置之外保持一些自己对JPA的控制。
+
+关键的区别在于EntityManager的创建和管理方式。
+
+这两种实体管理器工厂分别由对应的Spring工厂Bean创建:
+
+- LocalEntityManagerFactoryBean 生成应用程序管理类型的 EntityManagerFactory;
+- LocalContainerEntityManagerFactoryBean 生成容器管理类型的 EntityManagerFactory。
+
+#### 配置应用程序管理类型的JPA
+
+绝大部分配置信息来源于一个名为persistence.xml的配置文件
+
+略，见《Spring in Action 4》11章
+
+## 使用 NoSQL 数据库
+
+### MongoDB
+
+Spring Data MongoDB提供了三种方式在Spring应用中使用MongoDB:
+
+- 通过注解实现对象-文档映射;
+- 使用MongoTemplate实现基于模板的数据库访问;
+- 自动化的运行时Repository生成功能。
+
+启用MongoDB
+
+JavaConfig
+
+```java
+@Configuration
+@EnableMongoRepositories(basePackages="orders.db") // 启用 MongoDB Repository 功能
+public class MongoConfig {
+	@Bean
+	public MongoFactoryBean mongo(){ // MongoClient bean，类似于关系数据库的数据源
+		MongoFactoryBean mongo = new MongoFactoryBean();
+		mongo.setHost("localhost");
+		return mongo;
+	}
+	@Bean
+	public MongoOperations mongoTemplate(Mongo mongo){ // MongoTemplate bean
+		return new MongoTemplate(mongo, "OrdersDB");
+	}
+}
+
+// 另一种配置方式
+@Configuration
+@EnableMongoRepositories("orders.db") // 启用 MongoDB Repository 功能
+public class MongoConfig extends AbstractMongoConfiguration {
+	@Override
+	protected String getDatabaseName() { // 指定数据库名称
+		return "OrdersDB";
+	}
+	@Override
+	public Mongo mongo() throws Exception { // 指定 Mongo 客户端
+		return new MongoClient();
+	}
+}
+```
+
+略
+
+### Redis
+
+Spring Data Redis为四种Redis客户端实现提供了连接工厂:
+
+- JedisConnectionFactory
+- JredisConnectionFactory
+- LettuceConnectionFactory
+- SrpConnectionFactory
+
+```java
+@Bean
+public RedisConnectionFactory redisCF() {
+	JedisConnectionFactory cf = new JedisConnectionFactory();
+	cf.setHostName("redis-server"); // 默认是localhost
+	cf.setPort(9001); // 默认是6379
+	cf.setPassword("");
+	return cf;
+}
+```
+
+使用
+
+```java
+RedisConnectionFactory cf;
+RedisConnection conn = cf.getConnection();
+conn.set("greeting".getBytes(), "Hello".getBytes()); // 存数据
+```
+
+RedisTemplate
+
+```java
+RedisConnectionFactory cf;
+RedisTemplate<String, Product> redis = new RedisTemplate<String, Product>();
+redis.setConnectionFactory(cf);
+```
+
+## 缓存数据
+
+启用对缓存的支持
+
+Spring对缓存的支持有两种方式:
+
+- 注解驱动的缓存
+- XML声明的缓存
+
+JavaConfig
+
+```java
+@Configuration
+@EnableCaching // 启动注解驱动的缓存
+public class CachingConfig{
+	@Bean
+	public CacheManager cacheManager() { // 声明缓存管理器
+		return new ConcurrentMapCacheManager();
+	}
+}
+```
+
+XML
+
+```xml
+<beans ...>
+	<cache:annotation-driven />
+	<bean id="cacheManager" class="org.springframework.cache.concurrent.ConcurrentMapCacheManager" />
+</beans>
+```
+
+工作方式：创建一个切面(aspect)并触发 Spring 缓存注解的切点(pointcut)。根据所使用的注解以及缓存的状态，这个切面会从缓存中获取数据，将数据添加到缓存之中或者从缓存中移除某个值。
+
+使用 Encache 缓存
+
+使用 Redis 缓存
 
 ## Spring事务管理
 
@@ -2732,6 +3002,75 @@ public void demo(){
 事务
 
 事务管理的api
+
+## 辅助文档
+
+spring-config.xml 头部
+
+```xml
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+</beans>
+```
+
+## 远程调用
+
+### RMI
+
+创建过RMI服务的步骤:
+
+1. 编写一个服务实现类，类中的方法必须抛出java.rmi.RemoteException异常;
+2. 创建一个继承于java.rmi.Remote的服务接口;
+3. 运行RMI编译器(rmic)，创建客户端stub类和服务端skeleton类;
+4. 启动一个RMI注册表，以便持有这些服务;
+5. 在RMI注册表中注册服务。
+
+在Spring中配置RMI服务
+
+RmiServiceExporter可以把任意Spring管理的bean发布为RMI服务。
+
+```java
+@Bean
+public RmiServiceExporter rmiExporter(SomeService someService){ // 默认会绑定到本机1099端口的RMI注册表上，如果没有，则会启动一个。
+	RmiServiceExporter rmiExporter = new RmiServiceExporter();
+	rmiExporter.setService(someService);
+	rmiExporter.setServiceName("someService");
+	rmiExporter.setServiceInterface(SomeService.class);
+	rmiExporter.setRegisteryHost("myhost");
+	rmiExporter.setRegisteryPort(1199);
+	return rmiExporter;
+}
+```
+
+装配RMI服务
+
+```java
+// 为RMI服务创建代理
+@Bean
+public RmiProxyFactoryBean someService() {
+	RmiProxyFactoryBean rmiProxy = new RmiProxyFactoryBean();
+	rmiProxy.setServiceUrl("rmi://localhost/SomeService");
+	rmiProxy.setServiceInterface(SomeService.class);
+	return rmiProxy;
+}
+```
+
+使用
+
+```java
+@Autowired
+SomeService someService; // 像本地应用一样使用
+```
 
 ## 参考资料
 

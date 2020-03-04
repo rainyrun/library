@@ -309,3 +309,6 @@ public class MyMessageListener implements MessageListener {
 }
 ```
 
+Spring 的 JmsTemplate 用来消除冗长和重复的JMS代码
+
+JmsOperation 是 JmsTemplate 实现的接口

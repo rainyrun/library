@@ -353,6 +353,40 @@ proxy_hide_header Cache-Control;
 proxy_pass_header X-Accel-Redirect;
 ```
 
+
+
+```
+在nginx中配置proxy_pass代理转发时，如果在proxy_pass后面的url加/，表示绝对根路径；如果没有/，表示相对路径，把匹配的路径部分也给代理走。
+
+假设下面四种情况分别用 http://192.168.1.1/proxy/test.html 进行访问。
+
+第一种：
+location /proxy/ {
+proxy_pass http://127.0.0.1/;
+}
+代理到URL：http://127.0.0.1/test.html
+
+第二种（相对于第一种，最后少一个 / ）
+location /proxy/ {
+proxy_pass http://127.0.0.1;
+}
+代理到URL：http://127.0.0.1/proxy/test.html
+
+第三种：
+location /proxy/ {
+proxy_pass http://127.0.0.1/aaa/;
+}
+代理到URL：http://127.0.0.1/aaa/test.html
+
+第四种（相对于第三种，最后少一个 / ）
+location /proxy/ {
+proxy_pass http://127.0.0.1/aaa;
+}
+代理到URL：http://127.0.0.1/aaatest.html
+```
+
+
+
 ### 虚拟主机与请求转发
 
 当多个主机域名对应着同一个ip地址时，可以通过 server 块中的 server_name 来定义虚拟主机，server_name 对应用户请求中的主机域名。每个 server 块就是一个虚拟主机，只处理与之相对应的主机域名的请求。
@@ -489,6 +523,22 @@ p93，有时间抄一份
 ## 日志
 
 如果你发现有些地方出了问题，你可以在 /usr/local/nginx/logs 或者 /var/log/nginx 目录下的 access.log 和 error.log 文件中，找到原因。
+
+
+
+## 待整理
+
+通过nginx代理后的获取请求URL（getRequestURL）
+
+```
+location /path/test {
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header request_uri $request_uri;
+    proxy_pass http://localhost:18083;
+}
+```
 
 ## 参考资料
 

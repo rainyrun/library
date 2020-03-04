@@ -1146,7 +1146,7 @@ DOM操作分为3个方面
 > element.src
 
 - CSS-DOM
-   
+  
 > 针对CSS的操作，获取和设置style对象的各种属性。如
 > element.style.color = "red";
 
@@ -1316,6 +1316,9 @@ var allElements = document.getElementsByTagName("*"); // 取得所有元素
 var radios = document.getElementsByName("color"); // 获得name=color的单选按钮
 // 文档写入
 // write()、writeln()、open()和 close()
+
+// cookie
+document.cookie='MALL_CART=abc;domain=mall.rainyrun.top;Path=/';
 ````
 
 #### Element 类型
@@ -1575,7 +1578,7 @@ document.write("<p>This is inserted.</p>");//将语句写入html文档中
 ```
 
 2. innerHTML属性 读写某给定元素里的HTML内容
-     
+  
 ```js
 var testdiv = document.getElementById("testdiv");
 testdiv.innerHTML = "<p>I inserted content.</p>";//无论testdiv里有没有内容，都会被替换成innerHTML里的内容。
@@ -1864,6 +1867,7 @@ var req = new XMLHttpRequest();
 req.open('GET', location.href, false);
 req.send(null);
 var headers = req.getAllResponseHeaders().toLowerCase();
+var encoding = req.getResponseHeader('Content-Encoding');
 alert(headers);
 ````
 

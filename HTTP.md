@@ -1,5 +1,64 @@
 # HTTP
 
+HTTP 请求
+
+一个 HTTP 请求包括三个组成部分
+
+- 方法 --- 统一资源标识符(URI) --- 协议/版本
+- 请求的头部
+- 主体内容
+
+例子
+
+```
+POST /examples/default.jsp HTTP/1.1
+Accept: text/plain; text/html
+Accept-Language: en-gb
+Connection: Keep-Alive
+Host: localhost
+User-Agent: Mozilla/4.0 (compatible; MSIE 4.01; Windows 98)
+Content-Length: 33
+Content-Type: application/x-www-form-urlencoded
+Accept-Encoding: gzip, deflate
+
+lastName=Franks&firstName=Michael
+```
+
+URI 通常是相对服务器的根目录解释的。因此，始终一斜线/开头。
+
+头部和主体内容之间有一个回车换行符(CRLF)
+
+HTTP 响应
+
+一个 HTTP 响应也包括三个组成部分:
+- 方法 --- 统一资源标识符(URI) --- 协议/版本
+- 响应的头部
+- 主体内容
+
+例子
+
+```
+HTTP/1.1 200 OK
+Server: Microsoft-IIS/4.0
+Date: Mon, 5 Jan 2004 13:13:33 GMT
+Content-Type: text/html
+Last-Modified: Mon, 5 Jan 2004 13:13:12 GMT
+Content-Length: 112
+
+<html>
+<head>
+<title>HTTP Response Example</title> </head>
+<body>
+Welcome to Brainy Software
+</body>
+</html>
+```
+
+
+
+
+
+
 响应报文：协议版本、状态码、原因短语、可选的响应首部字段、实体主体
 
 HTTP是一种无状态协议，不保存状态。使用Cookie技术可以保持状态。

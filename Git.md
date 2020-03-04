@@ -416,6 +416,12 @@ git stash --patch
 
 
 
+git status中，中文显示不正确
+
+解决方案：git config --global core.quotepath false
+
+[git中文显示不对的stackoverflow上的解释](https://stackoverflow.com/questions/22827239/how-to-make-git-properly-display-utf-8-encoded-pathnames-in-the-console-window)
+
 
 
 ## Eclipse上使用Git

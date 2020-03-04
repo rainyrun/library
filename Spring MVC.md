@@ -124,6 +124,8 @@ controller-servlet.xml
 
 ![SpringMVC架构](images/SSM/SpringMVC架构.png)
 
+![SpringMVC原理](images/SSM/SpringMVC原理.png)
+
 Spring MVC 中各servlet的职责
 
 - DispatcherServlet：Front Controller的角色，接受请求，并分发到Page Controller进行处理
@@ -154,7 +156,7 @@ xml配置
 <listener>
 	<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
 </listener>
-<!-- 配置监听器加载的应用上下文(默认是applicationContext.xml) -->
+<!-- ContextLoaderListener 加载的应用上下文，这个文件定义了根应用上下文(默认是applicationContext.xml) -->
 <context-param>
 		<param-name>contextConfigLocation</param-name>
 		<!-- 使用","或" "来分割多个配置文件路径 -->
@@ -166,6 +168,8 @@ xml配置
 
 前端控制器
 
+在这里请求会第一次接触到框架，它负责将请求路由到其他的组件之中。
+
 任务
 
 1. 接收请求
@@ -174,15 +178,7 @@ xml配置
 4. 调用视图解析器，获得视图实现
 5. 交付模型数据给视图，视图使用模型数据渲染输出，输出通过响应传递给客户端
 
-> 使用了一个外部化的配置文件，用来配置SrpingMVC框架在处理Web请求过程中所涉及的各个组件，包括：
-> 
-> 1. HandlerMapping定义
-> 2. Controller定义
-> 3. ViewResolver定义等。
->
-> 默认路径是 `/WEB-INF/[servlet-name]-servlet.xml` [servlet-name]指 DispatcherServlet 定义时的servlet-name。本例中是 controller-servlet.xml
-
-xml配置
+在web.xml中配置
 
 ```xml
 <!--web.xml-->
@@ -190,7 +186,7 @@ xml配置
 <servlet>
 	<servlet-name>controller</servlet-name>
 	<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
-  <!-- 配置webApplicationContext的路径，使用","或" "来分割多个配置文件路径
+  <!-- 配置 DispatcherServlet 加载的应用上下文。使用","或" "来分割多个配置文件路径
   		 默认是文件是/WEB-INF/[servlet-name]-servlet.xml -->
 	<init-param>
 		<param-name>contextConfigLocation</param-name>
@@ -210,19 +206,7 @@ xml配置
 </servlet-mapping>
 ```
 
-DispatcherServlet 启动之后，加载对应的配置文件(controller-servlet.xml )，构建 WebApplicationContext
-
-1. 该 WebApplicationContext ，以通过 ContextLoaderListener 加载的顶层 WebApplicationContext 为父容器。
-2. 配置文件的默认名，为DispatcherServlet的 servlet-name 的值的基础上后缀 -servlet.xml，即 `<servlet-name>-servlet.xml`， 本例为 `controller-servlet.xml`
-3. 配置文件内包含Web组件的bean，如控制器、视图解析器、处理器映射。
-
-顶层WAC与DispatcherServlet的WAC间的关系
-
-![顶层WAC与DispatcherServlet的WAC间的关系](/Users/runlei/Documents/2.%E5%AD%A6%E4%B9%A0/%E5%AD%A6%E4%B9%A0/%E7%AC%94%E8%AE%B0/images/SSM/%E9%A1%B6%E5%B1%82WAC%E4%B8%8EDispatcherServlet%E7%9A%84WAC%E9%97%B4%E7%9A%84%E5%85%B3%E7%B3%BB.png)
-
-web.xml 创建的上下文 > applicationContext.xml 创建的上下文 > controller-servelt.xml 创建的上下文
-
-JavaConfig
+使用JavaConfig方式
 
 ```java
 public class SpittrWebAppInitializer extends AbstractAnnotationConfigDispatcherServletInitializer{
@@ -240,8 +224,106 @@ public class SpittrWebAppInitializer extends AbstractAnnotationConfigDispatcherS
 	protected Class<?>[] getServletConfigClasses(){
 		return new Class<?>[] {WebConfig.class};
 	}
+
+	// 注册 Filter 到 DispatcherServlet
+	@Override
+	protected Filter[] getServletFilters() {
+		return new Filter[] { new MyFilter() };
+	}
+
+	// customizeRegistration 设置更多参数
+	@Override
+	protected void customizeRegistration(Dynamic registration) {
+		registration.setMultipartConfig(new MultipartConfigElement("/tmp/spittr/uploads"));
+		registration.setLoadOnStartup();
+		registration.setInitParameter();
+	}
 }
 
+// Java 初始化器
+public class MyServletInitializer implements WebApplicationInitializer {
+	@Override
+	public void onStartup(ServletContext servletContext) throws ServletException {
+		Dynamic myServlet = servletContext.addServlet("myServlet", MyServlet.class); // 注册 Servlet
+		myServlet.addMapping("/custom/**"); // 映射 Servlet
+		javax.servlet.FilterRegistration.Dynamic filter = servletContext.addFilter("myFilter", MyFilter.class); // 注册 Filter
+		filter.addMappingForUrlPatterns(null, false, "/custom/*"); // 添加 Filter 的映射路径
+	}
+}
+```
+
+扩展 AbstractAnnotationConfigDispatcherServletInitializer 的任意类会自动地配置 DispatcherServlet 和 Spring应用上下文（位于Servlet上下文中）
+
+
+设置web.xml使用基于Java的配置
+
+```xml
+<!-- web.xml -->
+<web-app ...>
+	<!-- 使用 Java 配置 -->
+	<context-param>
+		<param-name>contextClass</param-name>
+		<param-value>org.springframework.web.context.support.AnnotationConfigWebApplicationContext</param-value>
+	</context-param>
+	<!-- 指定根配置类 -->
+	<context-param>
+		<param-name>contextConfigLocation</param-name>
+		<param-value>com....RootConfig</param-value>
+	</context-param>
+	<!-- 监听器 -->
+	<listener>
+		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+	</listener>
+	<!-- 前端控制器 -->
+	<servlet>
+		<servlet-name>controller</servlet-name>
+		<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+		<!-- 使用java配置 -->
+		<init-param>
+			<param-name>contextClass</param-name>
+			<param-value>org.springframework.web.context.support.AnnotationConfigWebApplicationContext</param-value>
+		</init-param>
+		<!-- 指定 DispatcherServlet 配置类 -->
+		<init-param>
+			<param-name>contextConfigLocation</param-name>
+			<param-value>com....WebConfig</param-value>
+		</init-param>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>controller</servlet-name>
+		<url-pattern>*.action</url-pattern>
+	</servlet-mapping>
+
+</web-app>
+```
+
+我们希望DispatcherServlet加载包含Web组件的bean，如控制器、视图解析器以及处理器映射，而ContextLoaderListener要加载应用中的其他bean。这些bean通常是驱动应用后端的中间层和数据层组件。
+
+> 使用了一个外部化的配置文件，用来配置SrpingMVC框架在处理Web请求过程中所涉及的各个组件，包括：
+> 
+> 1. HandlerMapping定义
+> 2. Controller定义
+> 3. ViewResolver定义等。
+>
+> 默认路径是 `/WEB-INF/[servlet-name]-servlet.xml` [servlet-name]指 DispatcherServlet 定义时的servlet-name。本例中是 controller-servlet.xml
+
+DispatcherServlet 启动之后，加载对应的配置文件(controller-servlet.xml )，构建 WebApplicationContext
+
+1. 该 WebApplicationContext ，以通过 ContextLoaderListener 加载的顶层 WebApplicationContext 为父容器。
+2. 配置文件的默认名，为DispatcherServlet的 servlet-name 的值的基础上后缀 -servlet.xml，即 `<servlet-name>-servlet.xml`， 本例为 `controller-servlet.xml`
+3. 配置文件内包含Web组件的bean，如控制器、视图解析器、处理器映射。
+
+顶层WAC与DispatcherServlet的WAC间的关系
+
+![顶层WAC与DispatcherServlet的WAC间的关系](/Users/runlei/Documents/2.%E5%AD%A6%E4%B9%A0/%E5%AD%A6%E4%B9%A0/%E7%AC%94%E8%AE%B0/images/SSM/%E9%A1%B6%E5%B1%82WAC%E4%B8%8EDispatcherServlet%E7%9A%84WAC%E9%97%B4%E7%9A%84%E5%85%B3%E7%B3%BB.png)
+
+web.xml 创建的上下文 > applicationContext.xml 创建的上下文 > controller-servelt.xml 创建的上下文
+
+最小但可用的SpringMVC配置
+
+```java
+// WebConfig
 @Configuration
 // 启动SpringMVC
 @EnableWebMvc
@@ -249,11 +331,28 @@ public class SpittrWebAppInitializer extends AbstractAnnotationConfigDispatcherS
 @ComponentScan("spitter.web")
 public class WebConfig extends WebMvcConfigurationAdapter{
 	@Bean
-	public 
+	public ViewResolver viewResolver() { // 配置 JSP 视图解析器
+		InternalResourceViewResolver resolver = new InternalResourceViewResolver();
+		resolver.setPrefix("/WEB-INF/views/");
+		resolver.setSuffix(".jsp");
+		resolver.setExposeContextBeansAsAttributes(true);
+		return resolver;
+	}
+
+	// 配置静态资源的处理
+	@Override
+	public void configureDefaultServletHandling(DefaultServletHandlerConfigurer configurer){
+		configurer.enable();
+	}
 }
+
+// RootConfig
+@Configuration
+@ComponentScan(basePackage={"spitter"},
+	excludeFilters={@Filter(type=FilterType.ANNOTATION, value=EnableWebMvc.class)})
+public class RootConfig{}
 ```
 
-AbstractAnnotationConfigDispatcherServletInitializer 会同时创建 DispatcherServlet 和 ContextLoaderListener。
 
 ## HandlerMapping
 
@@ -408,6 +507,12 @@ public class AnyTypeOfController{
 1. 用在类定义上，所有方法上的路径，都以类上的路径开头
 2. 用在方法定义上，表明当前方法定义是一个Web请求处理方法
 3. 多请求路径，vaule={url, url}
+
+注解RequestMapping中produces属性可以设置返回数据的类型以及编码，可以是json或者xml：
+
+```java
+@RequestMapping(value="/xxx",produces = {"application/json;charset=UTF-8"})
+```
 
 @CrossOrigin(origins="http://host:port", allowCredentials=true)
 
@@ -616,7 +721,7 @@ public class DemoController extends AbstractController{
 }
 ```
 
-Model（模型）实际上是一个Map，当视图是JSP时，放在Model里的数据会作为请求属性放在request作用域内。
+Model（模型）实际上是一个Map，可以用Map类型代替。当视图是JSP时，放在Model里的数据会作为请求属性放在request作用域内，如果不指明key，默认根据类型推断。
 
 当控制器返回一个对象数据时，它将自动加入到Model中，对应的key是它的类型。
 
@@ -978,8 +1083,56 @@ public ViewResolver viewResolver() {
 Spring的JSP库
 
 ```jsp
-<!-- 声明 -->
+<!-- spring的form标签库声明 -->
 <%@ taglib uri="http://www.springframework.org/tags/form" prefix="sf" %>
+
+<sf:form method="POST" commandName="spitter">
+	<!-- 将错误集中放在一起 -->
+	<sf:errors path="*" element="div" cssClass="errors" />
+	First name: <sf:input path="firstName" />
+		<sf:errors path="firstName" cssClass="error" /> <!-- 错误放在输入域的后面，path指定了显示哪个属性的错误 -->
+</sf:form>
+```
+
+将硬编码信息提取到属性文件里
+
+```java
+@Bean
+public MessageSource messageSource(){
+	ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
+	messageSource.setBasename("messages"); // 指定属性文件名，属性文件位于根类路径下
+	return messageSource;
+}
+
+@Bean
+public MessageSource messageSource () {
+	ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
+	messageSource.setBasename("file:///etc/spittr/messages"); // 在应用的外部查找，前缀可以是classpath:(类路径下)、file:(文件系统中)、空(Web应用的根目录下)
+	messageSource.setCacheSeconds(10); // 可以重新加载属性信息，不用重启应用
+	return messageSource;
+}
+```
+
+messages.properties
+
+```
+spittr.welcome=welcome
+```
+
+```jsp
+<!-- spring的通用标签库 -->
+<%@ taglib uri="http://www.springframework.org/tags" prefix="s" %>
+<s:message code="spittr.welcome" />
+```
+
+创建 url
+
+```jsp
+<!-- 假设Servlet上下文名为spittr，则a标签的href=/spittr/some/register -->
+<a href="<s:url href="/some/register" />">Register</a>
+
+<s:url href="/some/register" var="registerUrl" scope="request"/>
+<a href="${registerUrl}">Register</a>
 ```
 
 ## View
@@ -1186,25 +1339,40 @@ public class CustomerExceptionResolver implements HandlerExceptionResolver{
 }
 ```
 
+## 处理异常
 
-
-### 异常转化为响应
-
-Spring提供了多种方式将异常转化为响应：
+Spring提供了多种方式将异常转换为响应
 
 - 特定的Spring异常将会自动映射为指定的Http状态码
 - 异常上添加 @ResponseStatus 注解，将其映射为Http状态码
 - 方法上添加 @ExceptionHandler 注解，使其用来处理异常
 
-特定异常和Http状态码的映射
+### 异常映射为HTTP状态码
 
-略
+Spring会将自身的一些异常自动转换为合适的状态码
+
+|Spring异常|HTTP状态码|
+|---|---|
+|BindException|400 - Bad Request|
+|ConversionNotSupportedException|500 - Internal Server Error|
+|HttpMediaTypeNotAcceptableException|406 - Not Acceptable|
+|HttpMediaTypeNotSupportedException|415 - Unsupported Media Type|
+|HttpMessageNotReadableException|400 - Bad Request|
+|HttpMessageNotWritableException|500 - Internal Server Error|
+|HttpRequestMethodNotSupportedException|405 - Method Not Allowed|
+|MethodArgumentNotValidException|400 - Bad Request|
+|MissingServletRequestParameterException|400 - Bad Request|
+|MissingServletRequestPartException|400 - Bad Request|
+|NoSuchRequestHandlingMethodException|404 - Not Found|
+|TypeMismatchException|400 - Bad Request|
+
+任何没有映射的异常，响应都会带有500状态码
 
 其他异常映射为http状态码
 
 ```java
 @ResponseStatus(value=HttpStatus.NOT_FOUND, reason="Spittle Not Found")
-public class SpittleNotFoundException extends RuntimeException{
+public class SpittleNotFoundException extends RuntimeException{ // 应用自定义的异常
 	// code
 }
 ```
@@ -1212,6 +1380,7 @@ public class SpittleNotFoundException extends RuntimeException{
 异常处理的方法
 
 ```java
+// 当出现 MyException 异常时，handleMyException 会自动捕获并处理
 @ExceptionHandler(MyException.class)
 public String handleMyException(){
 	return "error/myException";
@@ -1220,13 +1389,25 @@ public String handleMyException(){
 
 @ExceptionHandler 注解标注的方法，可以处理同一个控制器中所有处理器方法所抛出的异常。
 
-## 控制器通知
+### 控制器通知
 
 带有 @ControllerAdvice 注解的类，会自动被组件扫描到。可以处理所有控制器中带有@RequestMapping注解的方法。包含一个或多个如下类型的方法
 
 - @ExceptionHandler 注解标注的方法
 - @IniMallInder 标注的方法
 - @ModelAttribute 标注的方法
+
+这些方法会运用到整个应用程序所有控制器中带有 @RequestMapping 注解的方法上。
+
+```java
+@ControllerAdvice
+public class AppWideExceptionHandler {
+	@ExceptionHandler(MyException.class)
+	public String myExceptionHandler() {
+		return "error/exception";
+	}
+}
+```
 
 ## LocalResolver
 
@@ -1272,6 +1453,18 @@ ThemeChangeInterceptor 切换主题
 
 ## 文件上传与MultipartResolver
 
+multipart 格式的数据会将一个表单拆分为多个部分(part)，每个部分对应一个输入域。在一般的表单输入域中，它所对应的部分中是文本型数据，但是如果上传文件的话，它所对应的部分是二进制数据。
+
+配置multipart解析器
+
+MultipartResolver 接口的实现类，可以解析 multipart 请求中的内容
+
+实现类
+
+- CommonsMultipartResolver 使用 Commons FileUpload 类库解析multipart请求
+- StandardServletMultipartResolver 依赖于Servlet3.0对multipart请求的支持(Spring3.1+)
+- CosMultipartResolver 使用 Oreilly Cos 类库实现
+
 场景：在表单中上传文件时
 
 ```html
@@ -1288,12 +1481,6 @@ ThemeChangeInterceptor 切换主题
       1. 是，则调用该MultipartResolver的resolveMultipart(request)方法，返回一个MultipartHttpServletRequest供后继使用。
       2. 否，则返回原HttpServletRequest
 
-实现类
-
-- CommonsMultipartResolver 使用 Commons FileUpload 类库实现
-- CosMultipartResolver 使用 Oreilly Cos 类库实现
-- StandardServletMultipartResolver 依赖于Servlet3.0对multipart请求的支持(Spring3.1+)
-
 使用方式
 
 1. 在controller-servlet.xml中配置MultipartResolver的实例
@@ -1308,12 +1495,25 @@ javaConfig
 public MultipartResolver multipartResolver() throws IOException{
 	return new StandardServletMultipartResolver();
 }
+
+// 在配置 DispatcherServlet 时，设置 StandardServletMultipartResolver 的相关参数
+DispatcherServlet ds = new DispatcherServlet();
+Dynamic registration = context.addServlet("appServlet", ds);
+registration.addMapping("/");
+registration.setMultipartConfig(new MultipartConfigElement("/tmp/spittr/uploads"));
+
+// 用 AbstractAnnotationConfigDispatcherServletInitializer 配置时，通过重载 customizeRegistration() 方法来配置multipart的具体细节
+@Override
+protected void customizeRegistration(Dynamic registration) {
+	registration.setMultipartConfig(new MultipartConfigElement("/tmp/spittr/uploads", 上传文件大小, 请求大小, 0));
+}
+
 ```
 
 xml配置
 
 ```xml
-<!-- 在DispatcherServlet中配置 -->
+<!-- 在 DispatcherServlet 中配置 -->
 <servlet>
 	<servlet-name>controller</servlet-name>
 	<servlet-class>..DispatcherServlet</servlet-class>
@@ -1373,9 +1573,36 @@ public MultipartResolver multipartResolver() {
 }
 ```
 
+前端页面
+
+```html
+<form action="/register" method="post" enctype="multipart/form-data">
+    <input type="file" name="pictureFile">
+</form>
+```
+
 使用代码示例
 
 ```java
+// 使用数据绑定，直接绑定到方法参数
+public String update(MultipartFile pictureFile){
+	// 存储到
+	pictureFile.transferTo(new File("/user/local/" + pictureFile.getOriginalFilename()));
+}
+
+// 得到 byte 数组形式的图片数据，功能比较有限。没有选择文件，那么数组是空。
+public String update(@RequestPart("pictureFile") byte[] pictureFile){
+	// 存储到
+	pictureFile.transferTo(new File("/user/local/" + pictureFile.getOriginalFilename()));
+}
+
+// 通过Part参数接收文件(Servlet3.0+)，与 MultipartFile 类似
+public String update(@RequestPart("pictureFile") Part pictureFile){
+	// 存储到
+	pictureFile.write("/user/local/" + pictureFile.getSubmittedFileName());
+}
+
+// 转化成 MultipartHttpServletRequest
 protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) throws Exception {
 	MultipartHttpServletRequest multipartRequest = (MultipartHttpServletRequest) request;
 	// 上传的文件
@@ -1384,24 +1611,7 @@ protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpSer
 	String fileDesc = multipartRequest.getParameter("desc");
 	// 文件内容（二进制）
 	byte[] fileContent = multipartFile.getBytes();
-
 	return new ModelAndView();
-}
-
-// 或者，使用数据绑定，直接绑定到方法参数
-public String update(MultipartFile pictureFile){
-	// 存储到
-	pictureFile.transferTo(new File("/user/local/" + pictureFile.getOriginalFilename()));
-}
-
-public String update(@RequestPart("pictureFile") byte[] pictureFile){
-	// 存储到
-	pictureFile.transferTo(new File("/user/local/" + pictureFile.getOriginalFilename()));
-}
-// 通过Part参数接收文件时，不需要配置MultipartResolver
-public String update(@RequestPart("pictureFile") Part pictureFile){
-	// 存储到
-	pictureFile.transferTo(new File("/user/local/" + pictureFile.getOriginalFilename()));
 }
 ```
 
@@ -1440,13 +1650,11 @@ public @RequestBody Items json(@RequestBody Items items){
 
 ## RESTful 风格
 
+用URL定位资源，用HTTP描述操作
+
 - Representational 表述性：REST资源可以用各种形式来进行表述，包括XML、JSON、HTML
 - State 状态：当使用REST的时候，我们更关注资源的状态而不是对资源采取的行为
 - Transfer 转移：REST涉及到转移资源数据，它以某种表述性形式，从一个应用转移到另一个应用。
-
-REST就是将资源的状态，以最适合客户端或服务端的形式，从服务器端转移到客户端（或反过来）。
-
-资源通过URL进行定位和识别。
 
 REST中的行为通过HTTP方法来定义的(并不严格遵循)
 
@@ -1464,14 +1672,120 @@ Spring 提供了2种方式，将资源的Java表述形式转换为发送给客�
 
 内容协商
 
-ContentNegotiatiingViewResolver 视图解析器的工作内容
+ContentNegotiatingViewResolver 视图解析器的工作内容
 
-1. 确定请求的媒体类型（URL结尾处的文件扩展名、基于Accept头部信息、默认"/"即所有类型。）
+1. 确定请求的媒体类型（URL结尾处的文件扩展名(.html, .xml, .json)、基于Accept头部信息、默认"/"即所有类型。）
 2. 找到适合请求媒体类型的最佳视图（委托给其他视图解析器）
 
 影响媒体类型的选择
 
-ContentNegotiationManager 
+ContentNegotiationManager 可以修改确定请求媒体类型的默认策略
+
+
+- 指定默认的内容类型，如果根据请求无法得到内容类型的话，将会使用默认值;
+- 通过请求参数指定内容类型;
+- 忽视请求的Accept头部信息;
+- 将请求的扩展名映射为特定的媒体类型;
+- 将JAF(Java Activation Framework)作为根据扩展名查找媒体类型的备用方案。
+
+配置
+
+```xml
+<bean id="contentNegotiationManager" class="org.springframework.http.ContentNegotiationManagerFactoryBean"
+	p:defaultContentType="application/json">
+```
+
+```java
+@Override
+public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
+	configurer.defaultContentType(MediaType.APPLICATION_JSON);
+}
+
+@Bean
+public ViewResolver enViewResolver(ContentNegotiationManager cnm) {
+	ContentNegotiatingViewResolver cnvr = new ContentNegotiatingViewResolver();
+	cnvr.setContentNegotiationManager(cnm);
+	return cnvr;
+}
+```
+
+HTTP 信息转换器
+
+|信息转换器|描  述|
+|---|---|
+|BufferedImageHttpMessageConverter|BufferedImages与图片二进制数据之间互相转换|
+|ByteArrayHttpMessageConverter|读取/写入字节数组。从所有媒体类型(*/*)中读取，并以application/octetstream格式写入|
+|FormHttpMessageConverter|将application/x-www-form-urlencoded内容读入到MultiValueMap<String,String>中，也会 将MultiValueMap<String,String>写入到application/x-www-form-urlencoded中，或将MultiValueMap<String, Object>写入到multipart/form-data中|
+|MappingJacksonHttpMessageConverter|在JSON和类型化的对象或非类型化的HashMap间互相读取和写入。 如果 Jackson JSON 库在类路径下，将进行注册|
+|MappingJackson2HttpMessageConverter|在JSON和类型化的对象或非类型化的HashMap间互相读取和写入。 如果 Jackson 2 JSON 库在类路径下，将进行注册|
+|ResourceHttpMessageConverter|读取或写入Resource|
+|SourceHttpMessageConverter|在XML和javax.xml.transform.Source对象间互相读取和写入。默认注册|
+|StringHttpMessageConverter|将所有媒体类型(*/*)读取为String。将String写入为text/plain|
+|XmlAwareFormHttpMessageConverter|FormHttpMessageConverter的扩展，使用SourceHttp MessageConverter来支持基于XML的部分|
+
+在响应体中返回资源状态
+
+@ResponseBody注解会告诉Spring跳过正常的模型/视图流程，将返回的信息放到响应体中。
+
+```java
+@RequestMapping(method=RequestMethod.GET, produces="application/json")
+public @ResponseBody List<SomeObject> someMethod() {
+	List<SomeObject> alist = new ArrayList<>();
+	// ...
+	return alist;
+}
+```
+
+假设客户端的Accept头部信息表明它接受“application/json”，并且Jackson JSON库位于应用的类路径下，那么将会选择 MappingJacksonHttpMessageConverter 消息转换器，将控制器返回的对象转换为JSON文档，并将其写入到响应体中。
+
+Jackson JSON库在将返回的对象转换为JSON资源表述时，会使用反射。
+
+produces 属性表明这个方法只处理预期输出为JSON的请求。即只会处理 Accept 头部信息包含 “application/json” 的请求。其他任何类型的请求，即使它的 URL 匹配指定的路径并且是GET请求也不会被这个方法处理。这样的请求会被其他的方法来进行处理，或者返回客户端 HTTP 406(Not Acceptable)响应。
+
+在请求体中接收资源
+
+@RequestBody注解告诉Spring查找一个消息转换器，将来自客户端的资源表述转换为对象。
+
+```java
+@RequestMapping(method=RequestMethod.POST, consumes="application/json")
+public @ResponseBody Student getStudent(@RequestBody Student stu) {
+	return stu;
+}
+```
+
+@RestController
+
+在控制器类上使用 @RestController 来代替 @Controller 的话，Spring将会为该控制器的所有处理方法应用消息转换功能。
+
+
+使用@ResponseStatus注解可以指定状态码;
+控制器方法可以返回ResponseEntity对象，该对象能够包含更多响应相关的元数据;
+异常处理器能够应对错误场景，这样处理器方法就能关注于正常的状况。
+
+使用ResponseEntity
+
+作为@ResponseBody的替代方案，控制器方法可以返回一个ResponseEntity对象。ResponseEntity中可以包含响应相关的元数据(如头部信息和状态码)以及要转换成资源表述的对象。
+
+```java
+@RequestMapping(value="/{id}")
+public ResponseEntity<Student> getStudent(@PathVariable long id) {
+	Student stu = studentService.findeStudent(id);
+	HttpStatus status = stu != null ? HttpStatus.OK : HttpStatus.NOT_FOUND;
+	HttpHeader headers = new HttpHeader(); // 在响应中设置头部信息
+	headers.setLocation(...);
+	return new ResponseEntity<Student>(stu, headers, status);
+}
+```
+
+可以通过异常处理器，不使用 ResponseEntity
+
+```java
+@ExceptionHandler(StudentNotFoundException.class)
+@ResponseStatus(HttpStatus.NOT_FOUND)
+public @ResponseBody Error studentNotFound(StudentNotFoundException e) {
+	return new Error(...);
+}
+```
 
 资源id放在url上，如，`http://jd.com/12345.html` 12345是资源编号
 
@@ -1491,26 +1805,35 @@ public void method(@PathVariable Integer id){
 
 ## 跨重定向请求传递数据
 
+发送数据给重定向的目标方法
+
 - 使用url模板，以路径变量和/或查询参数的形式传递数据
 
 ```java
-return "redirect:/{username}?id={id}";
+@RequestMapping("/redirect")
+public String redirect(Model model) {
+	model.addAttribute("username", "rainy");
+	model.addAttribute("id", 12345);
+	return "redirect:/{username}";
+}
+// 重定向的url为：http://localhost:8080/rainy?id=12345
 ```
 
 - 通过flash属性发送数据
 
-将数据发送为flash属性，flash属性会一直携带数据直到下一次请求，然后才会消失。
+可以用来发送对象等复杂数据。将数据发送为flash属性，flash属性会一直携带数据直到下一次请求，然后才会消失。
 
 ```java
 @RequestMapping("...")
-public String processRegistration(RedirectAttributes model){
+public String processRegistration(Spitter spitter, RedirectAttributes model){
 	// 添加flash属性
+	model.addAttribute("username", "rainy");
 	model.addFlashAttribute("spitter", spitter);
 	return "redirect:/{username}";
 }
 ```
 
-在重定向执行之前，所有的flash属性都会复制到会话中，在重定向后，flash属性会被取出，从会话转移到模型中。
+在重定向执行之前，所有的flash属性都会复制到会话中.在重定向后，存在会话中的flash属性会被取出，从会话转移到模型中。
 
 ## 数据验证
 
@@ -1583,6 +1906,21 @@ java校验API
 
 在属性上添加校验限制并不能阻止表单提交。可以通过Errors对象访问校验错误，Errors参数需要紧跟在带有@Valid注解的参数后面。
 
+```java
+public class Student {
+	@NotNull
+	@Size(min=5, max=16)
+	private String username;
+}
+
+@RequestMapping("/register")
+public String processRegistration(@Valid Student stu, Errors errors){
+	if(errors.hasErrors()){ // 如果出现教研错误
+		return "";
+	}
+}
+```
+
 ## 日志
 
 ```xml
@@ -1592,6 +1930,27 @@ java校验API
 	<listener-class>org.springframework.Web.util.Log4jConfigListener</listener-class>
 </listener>
 ```
+
+## Spring 异步消息
+
+消息代理
+
+消息代理类似于邮局，可以确保消息被投递到指定的目的地，同时解放发送者，使其能够继续进行其他的业务。
+
+目的地
+
+目的地就好像一个邮箱，可以将消息放入这个邮箱，直到有人将它们取走。目的地只关注消息应该从哪里获得，而不关心是由谁取走消息的。
+
+两种通用的目的地
+
+1. 队列：点对点模型
+2. 主题：发布/订阅模型
+
+JMS
+
+Java消息服务(Java Message Service ，JMS)是一个Java标准，定义了使用消息代理的通用API。(类似 JDBC 的作用)
+
+
 
 
 
@@ -1612,6 +1971,105 @@ java校验API
 	</resources>
 </build>
 ```
+
+使用 spring-test 在不部署应用的情况下，测试 controller
+
+```java
+public class MockTest {
+	public void testmvc() throws Exception {
+		TestController controller = new TestController();
+		MockMvc mock = MockMvcBuilders.standaloneSetup(controller).build();
+		mock.perform(MockMvcRequestBuilders.get("/")).andExpect(MockMvcResultMatchers.view().name("home"));
+	}
+}
+```
+
+### Apache Tiles 视图
+
+定义布局
+
+配置Tiles视图解析器
+
+```java
+@Bean
+public TilesConfigurer tilesConfigurer() {
+	TilesConfigurer tiles = new TilesConfigurer();
+	tiles.setDefinitions(new String[] {"/WEB-INF/layout/tiles.xml"}); // 指定 Tile 定义的位置
+	tiles.setCheckRefresh(true); // 启动刷新功能
+	return tiles;
+}
+
+@Bean
+public ViewResolver viewResolver() {
+	return new TilesViewResolver();
+}
+```
+
+xml配置
+
+```xml
+<bean id="tilesConfigurer" class="org.springframework.web.servlet.view.tiles3.TilesConfigurer">
+	<property name="definitions">
+		<list>
+			<value>/WEB-INF/layout/tiles.xml</value>
+			<value>/WEB-INF/views/**/tiles.xml</value>
+		</list>
+	</property>
+</bean>
+<bean id="viewResolver" class="org.springframework.web.servlet.view.tiles3.TilesViewResolver" />
+```
+
+定义Tile
+
+### Thymeleaf
+
+JavaConfig
+
+```java
+// Thymeleaf 视图解析器
+@Bean
+public ViewResolver viewResolver(SpringTemplateEngine templateEngine) {
+	ThymeleafViewResolver viewResolver = new ThymeleafViewResolver();
+	viewResolver.setTemplateEngine(templateEngine);
+	return viewResolver;
+}
+
+// 模板引擎
+@Bean
+public TemplateEngine templateEngine(TemplateResolver templateResolver) {
+	SpringTemplateEngine templateEngine = new SpringTemplateEngine();
+	templateEngine.setTemplateResolver(templateResolver);
+	return templateEngine;
+}
+
+// 模板解析器
+@Bean
+public TemplateResolver templateResolver() {
+	TemplateResolver templateResolver = new ServletContextTemplateResolver();
+	templateResolver.setPrefix("/WEB-INF/template/");
+	templateResolver.setSuffix(".html");
+	templateResolver.setTemplateMode("HTML5");
+	return templateResolver;
+}
+```
+
+xml 配置
+
+```xml
+<bean id="viewResolver" class="org.thymeleaf.spring3.view.ThymeleafViewResolver">
+	<property templateEngine-ref="templateEngine" />
+</bean>
+<bean id="templateEngine" class="org.thymeleaf.spring3.SpringTemplateEngine">
+	<property templateResolver-ref="templateResolver" />
+</bean>
+<bean id="templateResolver" class="org.thymeleaf.templateresolver.ServletContextTemplateResolver">
+	<property name="prefix">/WEB-INF/template/</property>
+	<property name="suffix">.html</property>
+	<property name="templateMode">HTML5</property>
+</bean>
+```
+
+定义Thymeleaf模板
 
 
 

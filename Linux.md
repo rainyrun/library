@@ -91,6 +91,8 @@ CentOS在安装过程中没有网络，则安装后无法联网，需要进行�
 ||p|粘贴|
 |定位|gg|到文本的第一行|
 ||shift+gg|到文本最后一行|
+||shift+4|光标定位到行尾|
+||shift+6|光标定位到行首|
 |删除|dd|删除光标所在行|
 ||ndd|删除n行|
 |退出|:q|退出（未修改内容时）|
@@ -100,6 +102,14 @@ CentOS在安装过程中没有网络，则安装后无法联网，需要进行�
 |查询|/查询的字符串|在非编辑模式下，输入/再输入查询的字符串|
 ||n|查询下一个命中的字符串|
 ||N|查询上一个命中的字符串|
+|替换|:s|将某个文本替换成另一个文本|
+||:s/str1/str2/| 用字符串 str2 替换行中首次出现的字符串 str1|
+||:s/str1/str2/g|用字符串 str2 替换行中所有出现的字符串 str1|
+||:%s/str1/str2/|替换每一行的第一个 str1 为 str2|
+||:%s/str1/str2/g|替换每一行中所有 str1 为 str2|
+||:1,$ s/str1/str2/g|功能同上|
+||:g/str1/s//str2/g|功能同上|
+||:.,$ s/str1/str2/g|用字符串 str2 替换正文当前行到末尾所有出现的字符串 str1|
 |撤销|u|撤销刚才的操作|
 ||ctrl+r|恢复刚才撤销的动作|
 |其他|:set number|显示行号|
@@ -792,7 +802,6 @@ ls
 # 寻找一对以 id_dsa 或 id_rsa 命名的文件，其中一个带有 .pub 扩展名。
 # 如果没有，则创建它们
 ssh-keygen
-
 ```
 
 
@@ -881,4 +890,245 @@ curl -H "Content-Type:application/json" -X PUT --data '{"name":"test2"}' http://
 
 $ curl -i itbilu.com
 添加-i参数后，页面响应头会和页面源码（响应体）一块返回。如果只想查看响应头，可以使用-I或--head参数：
+```
+
+wget 命令
+
+wget是一个下载文件的工具。基本的语法是：wget [参数列表] URL。
+
+```sh
+# 下载单个文件或网页。-x会强制建立服务器上一模一样的目录，如果使用-nd参数，那么服务器上下载的所有内容都会加到本地当前目录。 
+wget http://cn.wordpress.org/wordpress-3.1-zh_CN.zip # 文件的下载链接
+# -O下载并以不同的文件名保存。wget默认会以最后一个“/”的后面的字符来命名文件
+wget -O 下载文件名 下载链接
+# 限速下载
+wget --limit-rate=300k 下载链接
+# 断点续传，重启中断的下载。-t参数表示重试次数，例如-t 100（重试100次），-t 0（无穷次重试，直到连接成功）。-T参数表示超时等待时间，例如-T 120，表示等待120秒连接不上就算超时。 
+wget -c 下载链接
+# 后台下载
+wget -b 下载链接
+# 查看后台下载的进度
+tail -f wget-log
+# 伪装代理名称下载
+wget --user-agent="Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/534.16 (KHTML, like Gecko) Chrome/10.0.648.204 Safari/534.16" 下载链接 
+# 测试下载链接是否有效
+wget --spider URL
+# 增加重试次数
+wget --tries=40 URL
+# 批量下载
+wget -i filelist.txt # filelist.txt 里有多个下载链接，以换行分隔
+# 镜像网站，下载整个网站到本地。 
+wget --mirror -p --convert-links -P ./LOCAL URL 
+# –miror:开户镜像下载 
+# -p:下载所有为了html页面显示正常的文件 
+# –convert-links:下载后，转换成本地的链接 
+# -P ./LOCAL：保存所有文件和目录到本地指定目录 
+
+# 制作镜像站点。wget会登录到服务器上，读入robots.txt并按robots.txt的规定来执行。 
+wget -m http://place.your.url/here
+# 选择性下载。–accept=LIST 可以接受的文件类型，–reject=LIST 拒绝接受的文件类型。 
+wget --reject=gif url # 不下载gif格式的文件
+# 下载信息存入日志文件
+wget -o download.log URL 
+# 限制总下载文件大小，当超过该大小时，退出下载。注意：这个参数对单个文件下载不起作用，只能递归下载时才有效。
+wget -Q5m -i filelist.txt 
+# 下载指定格式文件  
+wget -r -A.pdf url # 下载一个网站的所有PDF文件
+# 来完成ftp链接的下载。 
+wget ftp-url # 使用wget匿名ftp下载
+wget –ftp-user=USERNAME –ftp-password=PASSWORD url # 使用wget用户名和密码认证的ftp下载 
+# 递归下载服务器上所有的目录和文件，实质就是下载整个网站。如果这个网站引用了其他网站，那么被引用的网站也会被下载下来。不常用。可以用-l number参数来指定下载的层次。例如只下载两层，那么使用-l 2。 
+wget -r http://place.your.url/here 
+
+# 密码和认证。 
+# wget只能处理利用用户名/密码方式限制访问的网站，可以利用两个参数： 
+# –http-user=USER设置HTTP用户 
+# –http-passwd=PASS设置HTTP密码 
+# 对于需要证书做认证的网站，就只能利用其他下载工具了，例如curl。 
+
+# 利用代理服务器进行下载。需要在当前用户的目录下创建一个.wgetrc文件。文件中可以设置代理服务器： 
+# http-proxy = 111.111.111.111:8080 
+# ftp-proxy = 111.111.111.111:8080 
+# 分别表示http的代理服务器和ftp的代理服务器。如果代理服务器需要密码则使用： 
+# –proxy-user=USER设置代理用户 
+# –proxy-passwd=PASS设置代理密码 
+# 这两个参数。 
+# 使用参数–proxy=on/off 使用或者关闭代理。
+
+
+-V,–version 显示软件版本号然后退出； 
+-h,–help显示软件帮助信息； 
+-e,–execute=COMMAND 执行一个 “.wgetrc”命令 
+
+-o,–output-file=FILE 将软件输出信息保存到文件； 
+-a,–append-output=FILE将软件输出信息追加到文件； 
+-d,–debug显示输出信息； 
+-q,–quiet 不显示输出信息； 
+-i,–input-file=FILE 从文件中取得URL； 
+
+-t,–tries=NUMBER 是否下载次数（0表示无穷次） 
+-O –output-document=FILE下载文件保存为别的文件名 
+-nc, –no-clobber 不要覆盖已经存在的文件 
+-N,–timestamping只下载比本地新的文件 
+-T,–timeout=SECONDS 设置超时时间 
+-Y,–proxy=on/off 关闭代理 
+
+-nd,–no-directories 不建立目录 
+-x,–force-directories 强制建立目录 
+
+–http-user=USER设置HTTP用户 
+–http-passwd=PASS设置HTTP密码 
+–proxy-user=USER设置代理用户 
+–proxy-passwd=PASS设置代理密码 
+
+-r,–recursive 下载整个网站、目录（小心使用） 
+-l,–level=NUMBER 下载层次 
+
+-A,–accept=LIST 可以接受的文件类型 
+-R,–reject=LIST拒绝接受的文件类型 
+-D,–domains=LIST可以接受的域名 
+–exclude-domains=LIST拒绝的域名 
+-L,–relative 下载关联链接 
+–follow-ftp 只下载FTP链接 
+-H,–span-hosts 可以下载外面的主机 
+-I,–include-directories=LIST允许的目录 
+-X,–exclude-directories=LIST 拒绝的目录 
+
+中文文档名在平常的情况下会被编码， 但是在 –cut-dirs 时又是正常的， 
+wget -r -np -nH –cut-dirs=3 ftp://host/test/ 
+测试.txt 
+wget -r -np -nH -nd ftp://host/test/ 
+%B4%FA%B8%D5.txt 
+wget “ftp://host/test/*” 
+%B4%FA%B8%D5.txt 
+
+由 於不知名的原因，可能是为了避开特殊档名， wget 会自动将抓取档名的部分用 encode_string 处理过， 所以该 patch 就把被 encode_string 处理成 “%3A” 这种东西， 用 decode_string 还原成 “:”，并套用在目录与档案名称的部分，decode_string 是 wget 内建的函式。 
+
+wget -t0 -c -nH -x -np -b -m -P /home/sunny/NOD32view/ http://downloads1.kaspersky-labs.com/bases/ -o wget.log
+```
+
+给普通用户添加root权限
+
+sudo命令可以让用户在当前账号下使用root权限
+
+```sh
+# 1. 以root用户查看/etc/sudoers
+ls -l /etc/sudoers
+# 2. 将sudoers文件更改成可写状态
+chmod 777 /etc/sudoers
+# 3. 添加有root权限的用户到文件内
+vim /etc/sudoers
+## Allow root to run any commands anywhere
+# root    ALL=(ALL)       ALL
+# hadoop     ALL=(ALL)       ALL
+# 4. 将文件改为只读
+chmod 440 /etc/sudoers
+# 切换普通用户，就可以用sudo命令了
+```
+
+### 修改命令行提示符的颜色
+
+PS1是Linux终端用户的一个环境变量，用来定义命令行提示符的参数。
+
+```sh
+# 当前PS1的定义值
+echo $PS1
+```
+
+PS1的常用参数以及含义:
+
+```
+\d ：代表日期，格式为weekday month date，例如："Mon Aug 1"
+\H ：完整的主机名称
+\h ：仅取主机名中的第一个名字
+\t ：显示时间为24小时格式，如：HH：MM：SS
+\T ：显示时间为12小时格式
+\A ：显示时间为24小时格式：HH：MM
+\u ：当前用户的账号名称
+\v ：BASH的版本信息
+\w ：完整的工作目录名称
+\W ：利用basename取得工作目录名称，只显示最后一个目录名
+\# ：下达的第几个命令
+\$ ：提示字符，如果是root用户，提示符为 # ，普通用户则为 $
+```
+
+颜色设置参数
+
+在PS1中设置字符颜色的格式为：`\[\e[F;Bm\]........\[\e[0m\]`，其中“F“为字体颜色，编号为30-37，“B”为背景颜色，编号为40-47，`\[\e[0m\]` 作为颜色设定的结束。
+
+颜色对照表：
+
+```
+F    B
+30  40 黑色
+31  41 红色
+32  42 绿色
+33  43 黄色
+34  44 蓝色
+35  45 紫红色
+36  46 青蓝色
+37  47 白色
+
+如要设置命令行的格式为绿字黑底(\[\e[32;40m\])，显示当前用户的账号名称(\u)、主机的第一个名字(\h)、完整的当前工作目录名称(\w)、24小时格式时间(\t)，可以直接在命令行键入如下命令
+
+PS1='[\[\e[32;40m\]\u@\h \w \t]$ \[\e[0m\]'
+```
+
+修改.bashrc文件，永久保存命令行样式。
+
+```sh
+vim ~/.bashrc
+source .bashrc
+```
+
+### 修改文件夹显示的颜色
+
+```sh
+# 1、拷贝/etc/DIR_COLORS文件为当前主目录的 .dir_colors
+cp /etc/DIR_COLORS ~/.dir_colors
+# 2、修改~/.dir_colors中DIR对应的颜色
+vim ~/.dir_colors
+# 第59行：DIR 01;34（01：粗体，34：蓝色）
+# 修改为：DIR 01;33（01：粗体，33：黄色）
+```
+
+```
+解释
+1、文件类型
+   1）直接用，有以下几种：
+        no 　　　 NORMAL, NORM 全局默认
+        fi　　　　FILE 普通文件
+        di 　　　 DIR 目录
+        ln　　　　SYMLINK, LINK, LNK 链接
+        pi　　　　FIFO, PIPE 管道
+        do　　　　DOOR Door
+        bd　　　　BLOCK, BLK 块设备
+        cd　　　　CHAR, CHR 字符设备
+        or　　　　ORPHAN 目标不存在到符号链接
+        so　　　　SOCK 套接字Socket
+        su　　　　SETUID 属主setuid有效的文件
+        sg　　　　SETGID 属组setuid有效到文件
+        tw　　　　STICKY_OTHER_WRITABLE Directory that is sticky and other-writable ( t,o w)
+        ow　　　　OTHER_WRITABLE Directory that is other-writable (o w) and not sticky
+        st　　　　STICKY Directory with the sticky bit set ( t) and not other-writable
+        ex　　　　EXEC Executable file (i.e. has ‘x’ set in permissions)
+        mi　　　　MISSING Non-existent file pointed to by a symbolic link (visible when you type ls -l)
+        lc　　　　LEFTCODE, LEFT Opening terminal code
+        rc 　　　 RIGHTCODE, RIGHT Closing terminal code
+        ec　　　　ENDCODE, END Non-filename text    
+    2）扩展名通过“.”加上扩展名
+    　 *.extension Every file using this extension e.g. *.jpg
+2、效果的具体代码如下
+    * 效果列表：
+          00 　　　　默认
+          01 　　　　加粗
+          04 　　　　下划线
+          05 　　　　闪烁
+          07 　　　　反显
+          08 　　　　隐藏
+    * 颜色列表：
+          31～37　　　　分别表示前景色为红、绿、橙、蓝、紫、青、灰
+          90～97　　　　分别表示前景色为深灰、淡红、淡绿、黄色、淡蓝、淡紫、青绿、白色
+          40～47　　　　分别表示背景色为黑、红、绿、橙、蓝、紫、青、灰
+          100～106　　　分别表示背景色为深灰、淡红、淡绿、黄色、淡蓝、淡紫、青绿
 ```

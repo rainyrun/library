@@ -24,11 +24,19 @@ servlet启动过程
 容器找到servlet类文件 --> 加载类，调用servlet的无参构造函数，调用init方法（容器启动，或者客户使用时）--> 处理请求和响应，调用service方法。
 ```
 
-servlet的方法
+Servlet 接口有5个方法
 
-1. init方法：一个servlet只会初始化一次，init方法只会执行一次。
-2. service方法：每次访问一个servlet程序时，都会调用这个方法进行处理。HttpServlet类的service方法，会根据请求的类型，调用doGet或doPost方法。
-3. destroy方法：该项目从服务器移除，或服务器正常关闭时，执行destroy方法
+```java
+public void init(ServletConfig config) throws ServletException
+public void service(ServletRequest request, ServletResponse response) throws ServletException, IOException
+public void destroy()
+public ServletConfig getServletConfig()
+public String getServletInfo()
+```
+
+1. init方法：一个servlet只会初始化一次，init方法只会执行一次。在 servlet 类已经初始化之后，init 方法将会被 servlet 容器所调用。
+2. service方法：每次请求一个servlet时，都会调用这个方法进行处理。servlet 容器传递一个 ServletRequest 和 ServletResponse 对象。HttpServlet类的service方法，会根据请求的类型，调用doGet或doPost方法。
+3. destroy方法：当从服务中移除一个 servlet 实例，或服务器正常关闭时，servlet 容器调用 destroy 方法
 
 对servlet的每个请求都在一个单独的线程中运行，任何特定的servlet类都只有一个实例。
 
@@ -149,11 +157,11 @@ getServletContext().getInitParameter("adminEmail");
 
 ```java
 ServletContext context = getServletContext();
-//获取给定的文件(当前项目下的某个文件)在服务器上面的绝对路径(根目录)
-String path = context.getRealPath("/images/product");
-//获取web工程下的资源，转化成流对象。
+// 获取当前项目下的某个文件在服务器上面的绝对路径。Web应用根目录是webapp目录
+String path = context.getRealPath("WEB-INF/images/product.png"); // path = .../webapp/WEB-INF/images/product.png
+// 获取web工程下的资源，转化成流对象。
 context.getResourceAsStream("file/config.properties")
-//根据classloader去获取工程下的资源
+// 根据classloader去获取工程下的资源
 InputStream is = this.getClass().getClassLoader().getResourceAsStream("../../file/congfig.properties");
 properties.load(is);
 ```
@@ -250,11 +258,11 @@ response.getOutputStream().write("hello".getBytes());
 ### 中文乱码问题
 
 ```java
-// 指定输出到客户端时使用的编码，需要在响应写入内容之前设置
+// 指定输出到客户端时使用的编码，需要在响应写入内容之前设置（告诉servlet用UTF-8转码，而不是用默认的ISO8859）
 response.setCharacterEncoding("UTF-8");
-// 指定浏览器解码的方式(不管用，待查证补充)
+// 指定浏览器解码的方式(不管用，待查证补充)，让浏览器用utf8来解析返回的数据
 response.setHeader("Content-Type", "text/html; charset=UTF-8");
-// 设置响应的数据类型，并告知浏览器
+// 同上
 response.setContentType("text/html; charset=UTF-8");
 
 // 查询getBytes()默认使用的码表
