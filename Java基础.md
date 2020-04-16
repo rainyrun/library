@@ -1995,11 +1995,11 @@ public static <T> Pair<T> makePair(Class<T> cl){
 Pair<String> p = Pair.makePair(String.class);
 ```
 
-Pair<S> 与 Pair<T> 是两个不同的类，它们没有关系。
+`Pair<S>` 与 `Pair<T>` 是两个不同的类，它们没有关系。
 
 通配符
 
-?本身是不受限通配符，它可以代表任何类型，而"? extends X"是受限通配符，它只能表示类型X以及任何extends（X是类）或impliments（X是接口）X的类型。
+`?` 本身是不受限通配符，它可以代表任何类型，而 `? extends X` 是受限通配符，它只能表示类型X以及任何extends（X是类）或impliments（X是接口）X的类型。
 
 ```java
 // 泛型，在返回类型前
