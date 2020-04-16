@@ -481,6 +481,11 @@ public class MessageConsumer implements MessageListener {
 
 1. 如果采用订阅发布模式，一个consumer绑定一个队列，不能多个consumer绑定1个队列吗？
 
+## 待整理
+
+RabbitMQ如何保证信息不丢失
+
+[RabbitMQ如何处理消息丢失](https://segmentfault.com/a/1190000019125512)
 
 ## 参考资料
 

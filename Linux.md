@@ -171,7 +171,13 @@ kill -9 pid
 tar zxvf /source/kernel.tgz -C /source/linux-2.6.29
 # 将文件压缩到linux-2.6.29
 tar czvf kernel.tgz linux-2.6.29
+
+# 压缩zip文件
+zip -q -r 压缩包名.zip 目录/文件名
+# 解压zip文件
+unzip 压缩包名.zip
 ```
+
 
 
 
@@ -407,6 +413,13 @@ ls 命令的选项表
 |rm|item...|删除文件和目录|
 |ln|file link|创建硬链接|
 ||-s item link|创建符号链接，item是目标文件相对于符号链接的路径，或者目标文件的绝对路径|
+
+```sh
+# 修改软链接
+ln –snf [新的源文件或目录] [软链接文件]
+# 删除软链接
+rm –rf ./软链接名称
+```
 
 通配符
 
@@ -1132,3 +1145,12 @@ vim ~/.dir_colors
           40～47　　　　分别表示背景色为黑、红、绿、橙、蓝、紫、青、灰
           100～106　　　分别表示背景色为深灰、淡红、淡绿、黄色、淡蓝、淡紫、青绿
 ```
+
+Mac 查看本机 JDK 安装目录
+
+```sh
+/usr/libexec/java_home -V
+```
+
+
+[CentOS7.5升级gcc到8.3.0版本](https://www.cnblogs.com/NanZhiHan/p/11010130.html)

@@ -1,35 +1,25 @@
+# Java Web
+
+## Web 请求过程
+
+发起一个请求
+
+发起一个HTTP请求的过程，就是建立一个 Socket 通信的过程。只不过写入 outputStream 的数据要符合 HTTP 协议的规范。
+
+不使用浏览器发送 HTTP 请求的方法
+
+1. HTTPClient 是一个开源的处理 HTTP 请求的工具包。
+2. curl + URL(Linux系统)
+
+```sh
+curl URL > /dev/null
+# 查看 HTTP 头的信息
+curl -I URL
+# 增加 HTTP 头的信息
+curl -I URL -H "Cookie:a=b"
+```
 
 
+## 参考资料
 
-
-
-
-
-
-
-MVC设计模式
-开发模式
-JavaBean+JSP
-	JavaBean：业务封装
-	JSP：在html里写java代码
-Servlet+JavaBean+JSP
-MVC模式
-M：model
-V：view
-C：control
-
-使用设计模式的原因
-1. 内聚
-2. 关注点分离
-3. 封装细节
-
-
-
-JavaEE分层
-客户端
-web层：		Servlet/jsp
-业务逻辑层：	EJB(javaBean)
-数据访问层：	Dao
-
-
-
+《深入分析 Java Web 技术内幕》，许令波

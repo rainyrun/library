@@ -1556,6 +1556,7 @@ Java语言规范将派生于 Error类 或 RuntimeException 类的所有异常称
 Exception是所有被检查异常的基类，然而，RuntimeException是所有不受检查异常的基类。
 
 Java中所有异常或者错误都继承Throwable，我们把它分为三类：
+
 - Error: 所有都继承自Error，表示致命的错误，比如内存不够，字节码不合法等。
 - Exception: 这个属于应用程序级别的异常，这类异常必须捕捉。
 - RuntimeException: RuntimeException继承了Exception，而不是直接继Error,这个表示系统异常，比较严重。
@@ -3755,6 +3756,98 @@ FileLock lock(long start, long size, boolean shared);
 FileLock tryLock(long start, long size, boolean shared);
 // 释放锁
 lock.close();
+```
+
+### NIO
+
+java.nio全称java non-blocking IO（实际上是 new io），是指JDK 1.4 及以上版本里提供的新api（New IO），为所有的原始类型（boolean类型除外）提供缓存支持的数据容器，使用它可以提供非阻塞式的高伸缩性网络。
+
+数据总是从通道被读取到缓冲中或者从缓冲写入到通道中。
+
+关键类： Channel 、 Selector 、 Buffer
+
+通道Channel
+
+NIO的通道类似于流，但有些区别如下：
+
+1. 通道可以同时进行读写，而流只能读或者只能写
+2. 通道可以实现异步读写数据
+3. 通道可以从缓冲读数据，也可以写数据到缓冲。
+
+Selector
+
+一个组件，可以检测多个NIO channel，看看读或者写事件是否就绪。
+
+多个Channel以事件的方式可以注册到同一个Selector，从而使用一个线程处理多个请求成为可能。
+
+Selector 可以轮询 Channel 的状态，Buffer 相当于 Channel 里的一个位置。
+
+```java
+public void selector() throws IOException {
+    ByteBuffer buffer = ByteBuffer.allocate(1024);
+    Selector selector = Selector.open();
+    ServerSocketChannel ssc = ServerSocketChannel.open();
+    ssc.configureBlocking(false); // 非阻塞方式
+    ssc.socket().bind(new InetSocketAddress(8080));
+    ssc.register(selector, SelectionKey.OP_ACCEPT); // 注册监听的时间
+    while(true) {
+        Set selectedKeys = selector.selectedKeys(); // 取得所有key集合
+        Iterator it = selectedKeys.iterator();
+        while(it.hashNext()){
+            SelectionKey key = (SelectionKey) it.next();
+            if(...){
+                ServerSocketChannel ssChannel = (ServerSocketChannel) key.channel();
+                SocketChannel sc = ssChannel.accept(); // 接受请求
+                sc.configureBlocking(false);
+                sc.register(selector, SelectionKey.OP_READ);
+                it.remove()
+            } else if(...){
+                SocketChannel sc = (SocketChannel)key.channel();
+                while(true){
+                    buffer.clear();
+                    int n = sc.read(buffer); // 读数据
+                    if(n <= 0){
+                        break;
+                    }
+                    buffer.flip();
+                }
+                it.remove();
+            }
+        }
+    }
+
+}
+```
+
+Buffer中的索引
+
+![buffer中的索引](images/Java/buffer中的索引.png)
+
+数据访问方式
+
+FileChannel.transferXXX 减少数据从内核到用户空间的复制。
+
+FileChannel.map 将文件按照一定大小映射为内存区域。
+
+```java
+public static void map(String[] args) {
+    int BUFFER_SIZE = 1024;
+    String filename = "test.db";
+    long fileLength = new File(filename).length();
+    int bufferCount = 1 + (int)(fileLength / BUFFER_SIZE);
+    MappedByteBuffer[] buffers = new MappedByteBuffer[bufferCount];
+    long remaining = fileLength;
+    for(int i = 0; i < bufferCount; i++){
+        RandomAccessFile file;
+        try {
+            file = new RandomAccessFile(filename, "r");
+            buffers[i] = file.getChannerl().map(FileChannel.MapMode.READ_ONLY, i * BUFFER_SIZE, (int)Math.min(remaining, BUFFER_SIZE));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        remaining -= BUFFER_SIZE;
+    }
+}
 ```
 
 ## 正则表达式
