@@ -4,6 +4,8 @@
 
 是一个基于 Java 的持久层框架
 
+![MyBatis层次结构](images/SSM/MyBatis层次结构.png)
+
 ## 我的理解
 
 核心功能有2个
