@@ -25,56 +25,82 @@ JVM 把自己管理的内存，划分成若干个不同的数据区域。有的�
 
 程序计数器
 
-可以看作是当前线程所执行的字节码的行号指示器。每条线程有一个独立的程序计数器。
-
-如果线程执行的是一个Java方法，则计数器记录的是正在执行的虚拟机字节码指令的地址；如果执行的是Native方法，则计数器值为空。
+1. 当前线程所执行的字节码的行号指示器，指向虚拟机字节码指令的地址。
+2. 每条线程有一个独立的程序计数器，即，线程私有。
+3. 执行Native方法，计数器值为空
+4. 没有OutOfMemoryError
 
 Java 虚拟机栈
 
-是线程私有的，生命周期与线程相同。每个Java方法在执行的同时都会创建一个栈帧(Stack Frame)用于存储局部变量表、操作数栈、动态链接、方法出口等信息。每个方法从调用到执行完毕的过程，就对应着一个栈帧在虚拟机栈中入栈到出栈到过程。
-
-局部变量表存放了编译期可知的各种基本数据类型、对象引用、returnAddress类型(指向了一条字节码指令的地址)。当进入一个方法时，这个方法需要在桢中分配多大的局部变量空间是完全确定的，不会在方法执行期间改变。
+1. 线程私有，生命周期与线程相同。
+2. 描述Java方法执行的线程内存模型。每个Java方法被执行的同时，虚拟机都会创建一个栈帧(Stack Frame)，栈帧中的内容如下。每个方法从调用到执行完毕的过程，就对应着一个栈帧在虚拟机栈中入栈到出栈到过程。
+    1. 局部变量表
+    2. 操作数栈
+    3. 动态链接
+    4. 方法出口等。
+3. 局部变量表中存储的是编译期可知的变量，有以下3种，以局部变量槽（Slot）来表示。表的大小在编译期确定。
+    1. 各种基本数据类型
+    2. 对象引用
+    3. returnAddress类型(指向了一条字节码指令的地址)
+4. 有两类异常
+    1. StackOverflowError：线程请求的栈深度大于虚拟机允许的深度。
+    2. OutOfMemoryError：虚拟机支持动态扩展，且扩展时无法申请到足够内存。
 
 本地方法栈
 
-为虚拟机使用到的 Native 方法服务。
+1. 与虚拟机栈类似，为虚拟机使用到的 Native 方法服务。
 
 Java 堆
 
-被所有线程共享的一块内存区域，用来存放对象实例，是垃圾收集器管理的主要区域。
-
-Java 堆可以处于物理上不连续的内存空间中，只要逻辑上是连续的即可。
-
-所有线程共享的Java堆中，可以划分出多个线程私有的分配缓冲区（Thread Local Allocation Buffer，TLAB），以提升对象分配时的效率。
+1. 被所有线程共享，虚拟机启动时创建。
+2. 用来存放对象实例。
+3. 是垃圾收集器管理的内存区域。
+4. 可以划分出多个线程私有的分配缓冲区（Thread Local Allocation Buffer，TLAB），以提升对象分配时的效率。
+5. 可以处于物理上不连续的内存空间中，只要逻辑上是连续的即可。
+6. 大小可固定，可扩展。
+7. 有 OutOfMemoryError，当堆没有内存，且无法扩展时。
 
 方法区
 
-是各个线程共享的内存区域，用于存储已被虚拟机加载的类信息、常量、静态变量、即时编译器编译后的代码等数据。
-
-不需要连续的内存，可以选择固定大小或者可扩展。
+1. 各个线程共享的内存区域
+2. 用于存储已被虚拟机加载的
+    1. 类信息
+    2. 常量
+    3. 静态变量
+    4. 即时编译器编译后的代码缓存。
+3. JDK8+，在本地内存中实现元空间（Metaspace）来存储。
+4. 不需要连续的内存。
+5. 可以选择固定大小或者可扩展。
+6. 会抛出 OutOfMemoryError
 
 运行时常量池(Runtime Constant Pool)
 
-是方法区的一部分。常量池用于存放编译期生成的各种字面量和符号引用。
-
-运行时常量池相对于Class文件常量池的一个重要特征是具备动态性，运行期间也可以将新的常量放入池中。
+1. 是方法区的一部分。
+2. 内容=Class文件中的常量池表（Constant Pool Table），存放编译期生成的各种字面量和符号引用。还会把符号引用翻译出来的直接引用存放在里面。
+3. 与Class文件常量池表不同的是，具备动态性，运行期间也可以将新的常量放入池中。
+4. 会抛出 OutOfMemoryError
 
 直接内存(Direct Memory)
 
-不是虚拟机运行时数据区的一部分。
+1. 不是虚拟机运行时数据区的一部分。
+2. 会抛出 OutOfMemoryError
+3. 内存的分配不受Java堆大小的限制，但是是本机内存的一部分。
 
-### hotspot 虚拟机对象
+![虚拟机内存分配.png](images/JVM/虚拟机内存分配.png)
+
+### HotSpot 虚拟机对象
 
 对象的创建
 
 0. 遇到new指令，检查指令的参数能否在常量池中定位到一个类的符号引用，检查对应的类是否加载、解析、初始化。
 1. 加载类
-2. 为对象分配内存，有2种方式
-    1. 指针碰撞 Bump The Pointer（空闲空间是连续的），直接移动指向空闲空间末尾的指针
-    2. 空间列表Free List（空闲空间不连续），记录空闲空间的位置，筛选分配
-    3. 保证线程安全的方式
+2. 为对象分配内存，所需内存在加载类后即可确定。
+    1. 分配内存的方式，有2种方式
+        1. 指针碰撞 Bump The Pointer（空闲空间是连续的），直接移动指向空闲空间末尾的指针
+        2. 空闲列表 Free List（空闲空间不连续），记录空闲空间的位置，筛选分配
+    2. 分配内存时，保证线程安全的方式
         1. CAS + 失败重试
-        2. 每个线程在Java堆中预先分配一小块内存（本地线程分配缓冲 Thread Local Allocation Buffer, TLAB）
+        2. 每个线程在Java堆中预先分配一小块内存（本地线程分配缓冲 Thread Local Allocation Buffer, TLAB），缓冲区用完后，分配新的缓冲区，再使用同步锁定。
 3. 初始化分配的内存空间，置0
 4. 对对象进行设置，将对象信息存在对象头 Object Header 中
 5. 执行init方法，初始化对象（构造函数）
@@ -82,23 +108,26 @@ Java 堆可以处于物理上不连续的内存空间中，只要逻辑上是连
 对象的内存布局
 
 1. 对象头 Header，分为2部分内容
-    1. 存储对象自身的运行时数据，如：HashCode、GC分代年龄、锁状态标志等。长度为32byte或64byte，被称为Mark Word，是动态定义的。
+    1. 存储对象自身的运行时数据，如：HashCode、GC分代年龄、锁状态标志、持有的锁等。长度为32byte或64byte，被称为Mark Word，是动态定义的。
     2. 类型指针，指向它的类型元数据的指针，通过这个指针确定对象是哪个类的实例。
     3. 数组长度，仅当对象是数组时存储。
 2. 实例数据 Instance Data，对象真正存储的有效信息。
+    1. 父类继承下来的字段
+    2. 子类中定义的字段
 3. 对齐填充 Padding，起占位符的作用。HotSpot要求对象的起始地址必须是8字节的整数倍。
 
 对象的访问定位
 
-Java 程序需要通过栈上的reference数据来操作堆上的具体对象。
-
-1. 使用句柄访问
-    1. Java 堆中会分配一块内存作为句柄池
-    2. reference 中存储对象的句柄地址，句柄中包含了对象实例数据与类型数据各自的具体地址信息。
+0. 通过栈（rainy：操作数栈？）上的reference数据来操作堆上的具体对象。
+1. 对象访问方式，主流的有2种
+    1. 使用句柄访问
+        1. Java 堆中会分配一块内存作为句柄池
+        2. reference 中存储对象的句柄地址，句柄中包含了对象实例数据与类型数据各自的具体地址信息。
+    2. 直接指针访问（HotSpot使用的方式）
+        1. reference 中存储的是对象地址。
+        2. 对象中需要有访问类型数据的指针。
 
 ![通过句柄访问对象](images/JVM/通过句柄访问对象.png)
-
-2. 直接指针访问
 
 ![直接指针访问对象](images/JVM/直接指针访问对象.png)
 
@@ -111,7 +140,7 @@ Java堆溢出
 使用参数
 
 ```sh
-# -Xms虚拟机内存最小值 -Xmx最大值 -XX:+HeapDumpOnOutOfMemoryError 堆转储快照 -XX:HeapDumpPath 存放地址
+# -Xms堆最小值 -Xmx堆最大值 -XX:+HeapDumpOnOutOfMemoryError 堆转储快照 -XX:HeapDumpPath 存放地址
 java -Xms10m -Xmx10m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/root/jvm/myTest/
 ```
 
@@ -133,10 +162,11 @@ java -Xss144k
 ```sh
 # 方法区（元空间）容量
 java -XX:MaxMetaspaceSize=6m
-# 方法区（元空间）初始大小
+# 方法区（元空间）初始大小，达到就会触发垃圾收集进行类型卸载，同时调整该值。
 java -XX:MetaspaceSize=6m
 # 在垃圾收集后，控制最小的元空间剩余容量的百分比
 java -XX:MinMetaspaceFreeRatio=6m
+java -XX:MaxMetaspaceFreeRatio
 ```
 
 本机直接内存溢出
@@ -158,9 +188,16 @@ java -XX:MaxDirectMemorySize=10M -Xmx10M
 - 什么时候回收？
 - 怎么回收？
 
-程序计数器、虚拟机栈、本地方法栈中，内存的分配和回收都具有确定性，不需要过多考虑回收问题。
+不需要考虑垃圾回收的区域
 
-Java堆和方法区是垃圾收集器的关注对象。
+1. 程序计数器
+2. 虚拟机栈
+3. 本地方法栈
+
+需要考虑垃圾回收的区域
+
+1. Java堆
+2. 方法区
 
 ### 对象是否死去
 
@@ -214,7 +251,7 @@ Java堆和方法区是垃圾收集器的关注对象。
 主要回收两部分内容
 
 1. 废弃常量。与堆内对象的回收类似，常量没有被任何变量引用时，会被回收。
-2. 不再使用的类
+2. 不再使用的类，需满足
     1. 该类的所有实例都已被回收，Java堆中不存在该类及任何派生类的实例。
     2. 加载该类的ClassLoader已被回收
     3. 该类对应的Class对象没有被引用，即无法通过反射访问该类的方法。
@@ -237,6 +274,12 @@ Java堆和方法区是垃圾收集器的关注对象。
 2. 追踪式（Tracing GC），主流
 
 #### 分代收集理论
+
+建立在两个分代假说上
+
+1. 弱分代假说（Weak Generational Hypothesis）：绝大多数对象都是朝生夕灭的。
+2. 强分代假说（Strong Generational Hypothesis）：熬过越多次垃圾收集过程的对象就越难以消灭。
+3. 跨代引用假说（Intergenerational Reference Hypothesis）：跨代引用相对于同代引用来说仅占极少数。
 
 垃圾收集器设计原则
 
@@ -292,6 +335,7 @@ Java堆和方法区是垃圾收集器的关注对象。
 - 原理
     1. 标记
     2. 将可回收对象移动到内存的一端，然后清理掉端边界以外的内存。
+- 缺点：需要更新大量的对象引用，且这个操作过程中，必须暂停用户进程。
 
 ### HotSpot的算法细节
 
@@ -302,39 +346,55 @@ Java堆和方法区是垃圾收集器的关注对象。
 
 安全点
 
-只在安全点生成OopMap，才进行垃圾收集。
-
-具有长时间执行的特征，才会被设为安全点。如方法调用、循环跳转、异常跳转。
-
-问题是，如何在垃圾收集时，让所有线程跑到最近的安全点，然后停顿下来。
-
-1. 抢先式中断。先中断所有线程，然后让不在安全点的线程恢复，跑到安全点再中断。（没有被采用）
-2. 主动式中断。在安全点轮询标志，发现为true就自己中断挂起。
+1. 只在安全点，生成OopMap，进行垃圾收集。
+2. 安全点满足“具有让程序长时间执行的特征”。如方法调用、循环跳转、异常跳转。
+3. 如何在垃圾收集时，让所有线程跑到最近的安全点，然后停顿下来。
+    1. 抢先式中断。先中断所有线程，然后让不在安全点的线程恢复，跑到安全点再中断。（没有被采用）
+    2. 主动式中断。在安全点轮询标志，发现为true就自己中断挂起。
 
 安全区域
 
-用来解决未执行，如Sleep或Blocked的程序，无法进入安全点的问题。
+1. 用来解决未执行，如Sleep或Blocked的程序，无法进入安全点的问题。
+2. 安全区域是指能够确保在某一段代码片段中，引用关系不会发生变化。
 
-安全区域是指能够确保在某一段代码片段中，引用关系不会发生变化。
+记忆集（Remembered Set）
 
-记忆集与卡表
+1. 用于解决跨代引用的问题。
+2. 记录从非收集区域指向收集区域的指针
+3. 是一种抽象数据结构。
+4. 有3种实现精度
+    1. 字长精度：每个记录精确到一个机器字长，该字包含跨代指针
+    2. 对象精度：每个记录精确到一个对象，该对象里有字段含有跨代指针
+    3. 卡精度：每个记录精确到一块内存区域，该区域内有对象含有跨代指针
 
-记忆集（Remembered Set）解决跨代引用的问题。记录从非收集区域指向收集区域的指针，是一种抽象数据结构。
+卡表（Card Table）
 
-卡表（Card Table）是记忆集的一种实现方式。
+1. 是记忆集的一种实现方式。
+2. 是卡精度。
+3. 最简单的形式可以是一个字节数组，元素是“卡页”，卡页指向内存区域中一块特定大小的内存块。
 
-写屏障
+写屏障（Write Barrier）
 
-写屏障（Write Barrier）用来维护卡表状态。可以看做是虚拟机对“引用类型字段赋值”的AOP切面。赋值前的部分叫写前屏障（Pre-Write Barrier），赋值后的叫写后屏障（Post-Write Barrier）。
+1. 用来维护卡表状态。
+    1. 卡表何时变脏？有其他分代区域中的对象引用了本区域对象时
+    2. 卡表如何变脏？写屏障
+2. 可以看做是虚拟机对“引用类型字段赋值”的AOP切面。赋值前的部分叫写前屏障（Pre-Write Barrier），赋值后的叫写后屏障（Post-Write Barrier）。
+3. 缺点
+    1. 每次对引用进行更新，就会产生额外的开销
+    2. 高并发场景，存在“伪共享”问题。伪共享是：多个相互独立的变量共享一个缓存行，同时对这些变量修改时，会彼此影响。
 
 并发的可达性分析
 
-解决并发扫描时，对象消失的问题
+做到和用户线程并发的可达性分析，有2种方式：
 
-1. 增量更新（Incremental Update）。当黑色对象插入新的指向白色对象的引用关系时，记录下来，等扫描后再扫描一次该黑色对象。
+1. 增量更新（Incremental Update）。
+    1. 当黑色对象（已分析完全部引用的对象）插入新的指向白色对象（未分析的对象）的引用关系时，记录下来。（rainy：此时引用关系插入了吗？）
+    2. 扫描结束后，再重新扫描记录的黑色对象。
 2. 原始快照（Snapshot At The Beginning，SATB）。
+    1. 当灰色对象删除指向白色对象的引用关系时，将这个要删除的引用记录下来。（rainy：此时是不是没有删除引用关系，等到扫描完再删除，然后再扫描一次？）
+    2. 扫描结束后，以记录的灰色对象为根，再扫描一次。
 
-### 经典垃圾收集器
+### 经典垃圾收集器（HotSpot）
 
 ![HotSpot的垃圾收集器](images/JVM/HotSpot的垃圾收集器.png)
 
@@ -342,102 +402,105 @@ Java堆和方法区是垃圾收集器的关注对象。
 
 Serial 收集器
 
-是一个单线程的收集器，运行时会停掉其他线程。
+1. 单线程的收集器，运行时会停掉其他线程。
+2. 客户端模式下，默认的新生代收集器
+3. 优点：额外内存消耗（Memory Footprint）最小。
 
 ![Serial收集器](images/JVM/Serial收集器.png)
 
-优点：简单高效，适用于客户端模式。
-
 ParNew 收集器
 
-是 Serial 收集器的多线程版本。
+1. 是 Serial 收集器的多线程并行版本。
+2. 服务端模式下，JDK7-首选的新生代收集器，可以与CMS(老年代的收集器)配合使用。JDK9+只能与CMS配合使用。
 
 ![ParNew收集器](images/JVM/ParNew收集器.png)
 
-CMS收集器(老年代的收集器)只能和ParNew或Serial配合使用，激活CMS后（使用-XX:+UseConcMarkSweepGC），新生代默认使用ParNew（JDK5前，可以使用-XX:+/-UseParNewGC来指定或禁用它。）
-
 Parallel Scavenge 收集器
 
-基于标记-复制算法，能并行收集的多线程收集器。目标是达到一个可控制的吞吐量。
+1. 基于标记-复制算法
+2. 能并行收集的多线程收集器。
+3. 目标是达到一个可控制的吞吐量。吞吐量=用户代码运行时间/(用户代码运行时间+垃圾收集运行时间)
+4. 有自适应调节策略
 
 相关参数
 
 ```sh
 # 设置最大垃圾收集停顿时间
--XX:MaxGCPauseMillis
+java -XX:MaxGCPauseMillis
 # 设置吞吐量大小，默认是99(垃圾收集时间是1%=1/(1+99))
--XX:GCTimeRatio
+java -XX:GCTimeRatio
 # 开关，打开后，垃圾收集器可以自适应的调节新生代大小、等参数
--XX:UseAdaptiveSizePolicy
+java -XX:UseAdaptiveSizePolicy
 ```
 
 Serial Old 收集器
 
-是Serial的老年代版本。供客户端模式下的HotSpot虚拟机使用。
+1. 是Serial的老年代版本。
+2. 单线程收集器
+3. 使用标记-整理算法
+4. 供客户端模式下的HotSpot虚拟机使用。
 
 Parallel Old 收集器
 
-是 Parallel Scavenge 的老年代版本，支持多线程并发，基于标记-整理算法。
+1. 是 Parallel Scavenge 的老年代版本。
+2. 支持多线程并发。
+3. 基于标记-整理算法。
 
-CMS 收集器
+CMS（Concurrent Mark Sweep） 收集器
 
-Concurrent Mark Sweep，是一种以获取最短回收停顿时间为目标的收集器。基于标记-清除算法，有4个步骤
-
-1. 初始标记 CMS initial mark，标记GC Roots能直接关联到的对象
-2. 并发标记 CMS concurrent mark，从GC Roots直接关联的对象开始，遍历对象图。
-3. 重新标记 CMS remark，修正在并发标记时，用户程序的增量操作造成的变化。
-4. 并发清除 CMS concurrent sweep
-
-步骤1，3需要Stop The World
+1. 目标：尽可能地缩短垃圾收集时用户线程的停顿时间。
+2. 基于标记-清除算法，有4个步骤，步骤1，3需要Stop The World。
+    1. 初始标记 CMS initial mark，标记GC Roots能直接关联到的对象
+    2. 并发标记 CMS concurrent mark，从GC Roots直接关联的对象开始，遍历对象图。
+    3. 重新标记 CMS remark，修正在并发标记时，用户程序的增量操作造成的变化。使用增量更新的方式。
+    4. 并发清除 CMS concurrent sweep
+3. 优点：并发收集、低停顿。
+4. 缺点
+    1. 对处理器资源非常敏感
+    2. CMS 收集器无法处理“浮动垃圾”（Floating Garbage）（并发清除时，用户线程可能还在制造垃圾），有可能出现 Concurrent Mode Failure 而导致 Full GC 的产生（之后会冻结用户线程，临时启用Serial Old收集器）。
+    3. 收集后会产生大量空间碎片
 
 ![CMS收集器](images/JVM/CMS收集器.png)
 
-CMS 收集器无法处理“浮动垃圾”（Floating Garbage），有可能出现 Concurrent Mode Failure 而导致 Full GC 的产生。
 
 使用参数
 
 ```sh
-# JDK5 提高CMS触发百分比（老年代使用的百分比，默认68%，JDK6默认92%）
--XX:CMSInitiatingOccupancyFraction
-# 默认开启，JDK9后废弃。表示在n次清理后，进行碎片整理
--XX:+UseCMSCompactAtFullCollection
+# 激活CMS
+java -XX:+UseConcMarkSweepGC
+# JDK5 当老年代使用了90%+，触发垃圾回收（老年代使用的百分比，默认68%，JDK6+默认92%）
+java -XX:CMSInitiatingOccupancyFraction=90
+# 默认开启，JDK9后废弃。Full GC时，进行碎片整理
+java -XX:+UseCMSCompactAtFullCollection
+# JDK9后废弃，表示在n次Full GC后，进行碎片整理
+java -XX:CMSFullGCsBeforeCompaction
 ```
 
-Garbage First 收集器
+Garbage First 收集器（简称 G1）
 
-简称 G1，开创了面向局部收集、基于Region的内存布局形式。
-
-面向堆内存任何部分组成回收集（Collection Set，CSet），衡量标准是哪块内存存放的垃圾多，回收收益最大。
-
-把连续的Java堆划分为多个大小相等的独立区域（Region），每一个Region都可以根据需要，扮演新生代的Eden空间、Survivor空间、老年代空间。
-
-Region中的特殊区域 Humongous，专门用来存储大对象（超过一个Region容量一半的对象）。
-
-G1 将 Region 作为单次回收的最小单元。并按照回收价值，给Region定回收的优先级。
-
-需要解决的问题
-
-- 跨Region的引用对象如何解决？使用记忆集
-
-1. 每个Region有自己的记忆集，记录别的Region指向自己的指针，标记这些指针分别在哪些卡页的范围内。
-2. 记忆集是一种哈希表，Key是别的Region的起始地址，Value是集合，存储卡表的索引号。
-
-- 并发标记阶段，如何保证收集线程与用户线程互不干扰？
-
-1. 用户线程改变对象引用关系。使用增量更新算法（CMS）或原始快照（G1）
-2. 回收时，新创建对象的内存分配。G1 设计了2个 TAMS（Top at Mark Start）的指针，把Region中的一部分空间划分出来，用于并发回收过程中的新对象分配，并发回收时新分配的对象地址都必须要在这两个指针位置以上。
-
-- 怎样建立可靠的停顿预测模型？
-
-1. 以衰减均值（Decaying Average）为理论基础
-2. 
-
-G1 收集器的运作过程
-
-1. 初始标记
-2. 并发标记
-3. 最终标记
-4. 筛选回收
+1. 面向服务端应用，全功能的垃圾收集器。
+2. 开创了面向局部收集、基于Region的内存布局形式。
+    1. 把连续的Java堆划分为多个大小相等的独立区域（Region），每一个Region都可以根据需要，扮演新生代的Eden空间、Survivor空间、老年代空间。
+    2. Region中的特殊区域 Humongous，专门用来存储大对象（超过一个Region容量一半的对象）。
+    3. G1 将 Region 作为单次回收的最小单元。并按照回收价值，给Region定回收的优先级。
+3. Mixed GC 模式。面向堆内存任何部分组成回收集（Collection Set，CSet），衡量标准是哪块内存存放的垃圾多，回收收益最大。
+4. 基于Region回收，需要解决的问题
+    - 跨Region的引用对象如何解决？使用记忆集
+        1. 每个Region有自己的记忆集，记录别的Region指向自己的指针，标记这些指针分别在哪些卡页的范围内。
+        2. 记忆集是一种哈希表，Key是别的Region的起始地址，Value是集合，存储卡表的索引号。
+        3. 由于Region较多，导致卡表较多，导致内存占用较多。
+    - 并发标记阶段，如何保证收集线程与用户线程互不干扰？
+        1. 保证垃圾标记的正确性：使用原始快照算法。
+        2. 新建对象如何分配内存：G1 设计了2个 TAMS（Top at Mark Start）的指针，把Region中的一部分空间划分出来，用于并发回收过程中的新对象分配，并发回收时新分配的对象地址都必须要在这两个指针位置以上。这些对象时默认存活的。
+        3. 当内存回收的速度，比不上内存分配的速度，G1也会冻结用户线程，导致Full GC而产生长时间停顿。
+    - 怎样建立可靠的停顿预测模型？
+        1. 以衰减均值（Decaying Average）为理论基础，预测Region的回收代价。
+5. G1 收集器的运作过程，1、3、4需要停顿。
+    1. 初始标记（Initial Marking）：标记 GC Roots 能直接关联到的对象，修改 TAMS 指针的值。
+    2. 并发标记（Concurrent Marking）：并发进行可达性分析
+    3. 最终标记（Final Marking）：处理并发标记时，SATB记录的有引用变动的对象。
+    4. 筛选回收（Live Data Counting and Evacuation）：更新Region的统计数据，制定回收计划，并回收。
+6. 可以由用户指定期望的停顿时间。
 
 ![G1收集器](images/JVM/G1收集器.png)
 
@@ -445,9 +508,9 @@ G1 收集器的运作过程
 
 ```sh
 # 设置Region大小，范围是1MB-32MB
--XX:G1HeapRegionSize
+java -XX:G1HeapRegionSize
 # 设置允许收集停顿的时间，默认200ms
--XX:MaxGCPauseMillis
+java -XX:MaxGCPauseMillis
 ```
 
 ### 低延迟垃圾收集器
@@ -460,17 +523,46 @@ G1 收集器的运作过程
 
 Shenandoah 收集器
 
+1. 与G1类似，使用基于Region的堆内存布局，存放大对象的 Humongous Region，默认回收价值最大的Region……
+2. 与G1不同的是
+    1. 并发整理
+    2. 不使用分代收集
+    3. 不使用记忆集，而是使用“连接矩阵”（Connection Matrix）记录跨Region的引用关系。
+3. 工作过程，1、3、6、8会停顿
+    1. 初始标记（Initial Marking）：标记 GC Roots 能直接关联到的对象。
+    2. 并发标记（Concurrent Marking）：并发进行可达性分析
+    3. 最终标记（Final Marking）：处理并发标记时，SATB记录的有引用变动的对象。统计回收价值最高的Region，组成回收集。
+    4. 并发清理（Concurrent Cleanup）：清理整个区域都没有存活对象的Region（Immediate Garbage Region）
+    5. 并发回收（Concurrent Evacuation）：与其他收集器有明显差异。复制待回收Region里的存活对象到其他Region。
+    6. 初始引用更新（Initial Update Reference）：将指向旧对象的引用更新到新地址。
+    7. 并发引用更新（Concurrent Update Reference）：真正进行引用更新操作。
+    8. 最终引用更新（Final Update Reference）：修正存在于GC Roots中的引用。
+    9. 并发清理（Concurrent Cleanup）：待回收的Region里都没有存活对象，都可以被清理了。
+4. 并发回收阶段，使用转发指针，来实现对象移动与用户程序并发。
+    1. 在对象头新增一个引用字段
+    2. 默认指向自己，在并发移动时，指向移动后的对象。
 ![Shenandoah收集器](images/JVM/Shenandoah收集器.png)
 
-ZGC 收集器
+ZGC(Z Garbage Collector) 收集器
 
-Z Garbage Collector，技术特点如下
-
-1. 基于 Region
-2. 不设分代
+1. 目标：低延迟。在任意堆内存大小下，把垃圾收集的停顿时间限制在10ms以内
+2. 基于 Region，不设分代。Region具有可动态创建和销毁，有动态的区域容量大小。
 3. 使用了读屏障、染色指针、内存多重映射
+    1. 染色指针：将少量额外的信息存储在指针上。Linux下，64位指针的高18位不能用来寻址。剩下的46位中，高4位用来存储4个标志信息。
+    2. 内存多重映射：将多个虚拟内存地址映射到同一个物理内存地址上。
 4. 使用标记-整理算法
-5. 以低延迟为首要目标
+5. 运作过程
+    1. 并发标记（Concurrent Mark）：并发进行可达性分析
+    2. 并发预备重分配（Concurrent Prepare for Relocate）：统计出要回收的Region，组成重分配集。
+    3. 并发重分配（Concurrent Relocate）：把重分配集中的存活对象复制到新的Region上，并记录旧-新对象的转向关系。
+    4. 并发重映射（Concurrent Remap）：修正堆中指向重分配集中旧对象的所有引用。
+6. 优点
+    1. 不需要记忆集占用内存空间
+    2. 没有用到写屏障
+7. 缺点
+    1. 能承受的对象分配速率不高（因为没有分代）
+
+![染色指针示意图](images/JVM/染色指针示意图.png)
 
 ![ZGC收集器](images/JVM/ZGC收集器.png)
 
@@ -478,15 +570,34 @@ Z Garbage Collector，技术特点如下
 
 Epsilon 收集器
 
-无垃圾收集行为，适合使用时间短，使用内存少的移动端应用？
+1. 无垃圾收集行为（rainy：适合使用时间短，使用内存少的移动端应用？）
 
-日志
+虚拟机及垃圾收集器日志
 
 使用参数
 
 ```sh
-java -Xlog[:[selector][:[output][:[decorators][:output-options]]]]
+-Xlog[:[selector][:[output][:[decorators][:output-options]]]]
+```
 
+1. selector由tag和level组成
+    1. tag有：add, age, alloc, annotation, aot, agruments, attach, barrier, biasedlocking, blocks, bot, breakpoint, byteco???
+    2. level有：Trace, Debug, Info, Warning, Error, Off
+2. decorator为每行日志输出加上额外的内容，默认显示uptime，level，tags
+    1. time：当前日期和时间
+    2. uptime：虚拟机启动到现在经过的时间（秒）
+    3. timemillis：当前时间的毫秒数，相当于System.currentTimeMillis()的输出
+    4. uptimemillis：虚拟机启动到现在经过的时间（毫秒）
+    5. timenanos：当前时间的纳秒数，相当于System.nanoTime()的输出
+    6. uptimenanos：虚拟机启动到现在经过的时间（纳秒）
+    7. pid：进程ID
+    8. tid：线程ID
+    9. level：日志级别
+    10. tags：日志输出的标签集
+
+例子
+
+```sh
 # 查看GC基本信息
 java -Xlog:gc GCTest # JDK9+
 java -XX:+PrintGC # JDK9-
