@@ -42,9 +42,9 @@ CentOS在安装过程中没有网络，则安装后无法联网，需要进行�
 
 ## 常用命令
 
-|命令|作用|选项|参数|
+|命令|作用|选项|
 |---|---|---|
-|ls|显示当前目录的内容|-l：以长模式输出(更详细的内容)<br />-a：显示隐藏文件|文件路径。可以是多个，以空格分隔|
+|ls|显示当前目录的内容|-l：以长模式输出(更详细的内容)<br />-a：显示隐藏文件文件路径。可以是多个，以空格分隔|
 |ll|显示指定文件的内容||
 |cd|切换目录 change directory|~：当前用户目录<br />~user_name：user_name的用户目录<br />/：根目录<br />-：上次访问目录<br />..：上一级目录<br />空：缺省当前用户目录|
 |touch|创建文件|文件名|
@@ -60,9 +60,20 @@ CentOS在安装过程中没有网络，则安装后无法联网，需要进行�
 |rm|删除|-f：强制删除（没有提示）<br />-r：递归处理，用于删除目录|
 |find|搜索文件|语法：find[目录][参数]|
 |ps|查看进程|-ef|
-|ifconfig|显示网络信息||
+|ifconfig|显示网络信息(Linux/Unix)||
 |ping|测试与目标主机的连通性||
 |file|确定文件类型||
+
+ipconfig(windows)
+
+```sh
+# 显示主机的所有信息
+ipconfig /all
+# 查看主机中存储的DNS信息
+ipconfig /displaydns
+# 清除缓存
+ipconfig /flushdns
+```
 
 ### less
 
@@ -1151,6 +1162,52 @@ Mac 查看本机 JDK 安装目录
 ```sh
 /usr/libexec/java_home -V
 ```
+
+
+
+
+
+nslookup
+
+nslookup用于查询DNS的记录，查询域名解析是否正常，在网络故障时用来诊断网络问题
+
+```sh
+nslookup -option1 -option2 host-to-find dns-server
+```
+
+```
+nslookup domain [dns-server]
+  //如果没有指定dns服务器，就采用系统默认的dns服务器。
+
+nslookup -qt = type domain [dns-server]
+type:
+    A -->地址记录
+    AAAA   -->地址记录
+    AFSDB Andrew    -->文件系统数据库服务器记录
+    ATMA -->ATM地址记录
+    CNAME   -->别名记录
+    HINHO  -->硬件配置记录，包括CPU、操作系统信息 
+    ISDN   -->域名对应的ISDN号码
+    MB   -->存放指定邮箱的服务器
+    MG    -->邮件组记录
+    MINFO   -->邮件组和邮箱的信息记录
+    MR   -->改名的邮箱记录
+    MX   -->邮件服务器记录
+    NS  --> 名字服务器记录
+    PTR    ->反向记录
+    RP    -->负责人记录
+    RT  -->路由穿透记录
+    SRV    -->TCP服务器信息记录
+    TXT   -->域名对应的文本信息
+    X25  -->域名对应的X.25地址记录
+
+nslookup -d [其他参数] domain [dns-server]     
+//只要在查询的时候，加上-d参数，即可查询域名的缓存
+```
+
+nmap
+
+确定哪个应用程序正在监听哪些端口
 
 
 [CentOS7.5升级gcc到8.3.0版本](https://www.cnblogs.com/NanZhiHan/p/11010130.html)

@@ -430,6 +430,16 @@ Eclipse 的git插件 --- Window > Open Perspective > Other...， 然后选择 �
 
 帮助文档 --- Help > Help Contents 选择 “EGit Documentation” 节点
 
+## 待整理
+
+撤销中间的某次commit
+
+```sh
+git revert 100047dcc
+```
+
+[git 优雅的撤销中间某次提交](https://blog.csdn.net/u013066244/article/details/79920012)
+
 ## 参考资料
 
 [ProGit](https://git-scm.com/book/en/v2)

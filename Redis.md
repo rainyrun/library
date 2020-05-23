@@ -231,7 +231,7 @@ redis数据都存储在内存中，如果机器挂掉，内存的数据就不存
 
 
 有2种持久化方法。可以同时使用。
-JsonUtils.objectToJson(list)
+
 - RDB：快照(snapshotting)，将存在于某一时刻的所有数据都写入硬盘。会产生一个dump.rdb文件（位置：bin目录）。默认开启（bin/redis.conf中）。
   - 特点：可能会发生数据丢失的问题，性能好
 - AOF：只追加文件(append-only file)，执行写命令时，将被执行的写命令复制到硬盘里。恢复数据，重新执行一遍即可。

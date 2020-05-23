@@ -8,6 +8,37 @@ JavaBean表示一个应用组件
 
 需要依赖log4j
 
+## 设计理念
+
+Spring框架的核心组件是：Core、Context、Bean。
+
+Spring通过把对象包装在Bean中，从而达到管理这些对象，或做一些额外操作的目的。如，依赖注入机制。
+
+Context是Bean关系的集合，即IoC容器，用来建立并维护Bean之间的关系。
+
+Core是发现、建立、维护Bean之间关系的工具。
+
+![Spring-三个组件的关系](images/SSM/Spring-三个组件的关系.png)
+
+### 核心组件
+
+Bean组件
+
+在Spring的org.springframework.beans包下，解决3件事
+
+1. Bean的定义。由 BeanDefinition 描述。Spring解析一个 `<bean/>` 节点后，在内部它就被转化成 BeanDefinition 对象。
+2. Bean的创建。是工厂模式，顶级接口是BeanFactory
+3. Bean的解析。主要是对Spring配置文件的解析
+
+Context 组件
+
+ApplicationContext是Context的顶级父类
+
+Core 组件
+
+
+
+
 ## 依赖注入(DI)
 
 别名：IoC(Inversion of Control)控制反转
@@ -483,7 +514,7 @@ p:属性名-ref="属性值"
 
 ![util-命名空间](images/SSM/util-命名空间.png)
 
-####工厂模式
+#### 工厂模式
 
 1. 静态工厂方法
 
@@ -3073,6 +3104,10 @@ SomeService someService; // 像本地应用一样使用
 ```
 
 ## 参考资料
+
+《Spring In Action》
+
+《深入分析JavaWeb技术内幕》
 
 [Spring官网](https://spring.io)
 

@@ -1488,39 +1488,64 @@ new Object(){}.getClass().getEndosingClass() // gets class of static method
 
 ## 代理
 
-代理类可以在运行时创建全新的类。这样的代理类能够实现指定的接口。然而不能在运行时定义这些方法的新代码，而是要提供一个调用处理器。
+作用：可以在运行时，创建一个实现了一组给定接口的新类。
 
-调用处理器是实现了InvocationHandler接口的类对象。这个接口中只有一个方法
+rainy声明：以下代理相关的内容为个人理解，可能存在偏差
+
+1. 代理的作用
+    1. 为一个目标对象的方法，增加统一的新的内容。如Spring的AOP，就是使用的动态代理。
+    2. 权限控制
+2. 目标对象的要求：目标对象被增强的方法，需要来自某接口，或者是Object类的方法
+
+生成一个代理类对象的步骤
+
+1. 生成代理类对象，需要使用 `Proxy.newProxylnstance(ClassLoader , Class[], InvokeHandler);` 方法，参数依次是：加载接口需要的ClassLoader、代理类需要实现的接口数组（即目标对象的类实现的接口）、方法增强的内容的实现，即调用处理器。
+2. 如果是自定义的接口，ClassLoader推荐使用 `Thread.currentThread().getContextClassLoader()`
+3. InvokeHandler是一个接口，只有一个方法 `Object invoke(Object proxy, Method method, Object[] args)` 需要定义一个类实现它。无论何时调用目标对象的方法，调用处理器的invoke方法都会被调用。method代表正在执行的方法，args是方法等参数。
+4. 使用代理类对象，调用目标对象对应的方法，路径是：`代理类对象的方法-->InvokeHandler的invoke方法-->目标对象的方法` 
+
+使用方式如下
 
 ```java
-Object invoke(Object proxy, Method method, Object[] args)
-```
-
-无论何时调用代理对象的方法，调用处理器的invoke方法都会被调用。method代表正在执行的方法，args是方法等参数。
-
-创建代理对象
-
-```java
-// InvocationHandler 包装了一个类的对象
-class TraceHandler implements InvocationHandler {
-    private Object target;
-    public TraceHandler(Object t) {
-        target = t;
-    }
-    // 之后target的所有方法，都通过调用处理器的invoke方法被调用。
-    public Object invoke(Object proxy, Method m, Object[] args) throws Throwable {
-        // print method name and parameters
-        // invoke actual method
-        return m.invoke(target, args);
+public class MyProxyTest {
+    public static void main(String[] args) {
+        // 创建Handler
+        MyHandler handler = new MyHandler(new MyClass());
+        // 需要实现的接口
+        Class[] interfaces = new Class[] {Rainy.class};
+        // 创建代理类，代理类实现了接口中的方法，这些方法调用InvokeHandler里的invoke方法
+        Object proxy = Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), interfaces, handler);
+        // 调用方法
+        ((Rainy)proxy).printRainy();
     }
 }
 
-Object value = ...;
-InvocationHandler handler = new TraceHandler(value);
-// construct proxy for one or more interfaces
-Class[] interfaces = new Class[] { Comparable.class };
-// 这个代理类的对象，实现了 interfaces 接口里的全部功能
-Object proxy = Proxy.newProxylnstance(null , interfaces, handler);
+interface Rainy {
+    void printRainy();
+}
+
+class MyHandler implements InvocationHandler {
+    private Object target; // 被包装的对象
+
+    public MyHandler(Object target) {
+        super();
+        this.target = target;
+    }
+
+    // 之后target的所有方法，都通过调用处理器的invoke方法被调用。
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        System.out.println("invoke: " + method.getName());
+        return method.invoke(target, args);
+    }
+}
+
+class MyClass implements Rainy{
+    @Override
+    public void printRainy() {
+        System.out.println("Rainy");
+    }
+}
 ```
 
 代理类在运行时被创建，一旦被创建，就变成了常规类。所有的代理类都扩展自Proxy类。一个代理类只有一个实例域：调用处理器。所有的代理类都覆盖了 Object 类中的方法 toString、equals 和 hashCode。
@@ -3367,6 +3392,10 @@ DataInputStream din = new DataInputStream(zin);
 
 ### 文本的IO
 
+InputStreamReader 是从字节到字符的转化桥梁。StreamDecoder完成从字节到字符的解码。
+
+OutputStreamWriter 完成从字符到字节的编码，由 StreamEncoder完成编码过程。
+
 Java 内部使用 UTF-16 编码方式。
 
 ```java
@@ -3817,13 +3846,18 @@ public void selector() throws IOException {
     }
 
 }
+
+// 通过Native代码操作与底层存储空间关联的缓冲区
+ByteBuffer.allocateDirector(size);
 ```
 
 Buffer中的索引
 
 ![buffer中的索引](images/Java/buffer中的索引.png)
 
-数据访问方式
+![DirectBuffer和NonDirectBuffer对比](images/Java/DirectBuffer和NonDirectBuffer对比.png)
+
+NIO的数据访问方式
 
 FileChannel.transferXXX 减少数据从内核到用户空间的复制。
 
@@ -3942,9 +3976,9 @@ TCP协议
 // 入门程序
 public class SocketTest{
     public static void main(String[] args) {
-        try(Socket s = new Socket("time-a.nist.gov", 13);
+        try(Socket s = new Socket("time-a.nist.gov", 13); // 目的地址、端口
             Scanner in = new Scanner(s.getInputStream(), "UTF-8")){
-            while(in.hasNextLine()){
+            while(in.hasNextLine()){ // 读入服务器发来的数据
                 String line = in.nextLine();
                 System.out.println(line);
             }
@@ -3995,21 +4029,21 @@ DatagramSocket ds = new DatagramSocket();
 String s = "hello, UDP!"
 byte[] bys = s.getBytes();
 int length = bys.length;
-InetAddress address = InetAddress.getByName("rainy");
-int port = 8888;
-//打包
+InetAddress address = InetAddress.getByName("rainyrun.top"); // 目的地址
+int port = 8888; // 目的端口
+// 打包，提供必要信息
 DatagramPackage dp = new DatagramPacket(bys, length, address, port);
-//发送数据
+// 发送数据
 ds.send(dp);
-//释放资源
+// 释放资源
 ds.close();
 ```
 
 UDP协议接受数据
 
 ```java
-//创建接收端Scoket对象
-DatagramSocket = new DatagramSocket(8888);
+// 创建接收端Scoket对象
+DatagramSocket ds = new DatagramSocket(8888);
 //接收数据
 byte[] bys = new byte[1024];
 DatagramPacket dp = new DatagramPacket(bys, bys.length);
@@ -4049,6 +4083,8 @@ try(
 }
 // 备注：使用 out.write("...") 客户端无法接收到信息，原因是 SocketOutputStream 及其父类没有覆写 flush 方法。而 newLine 会自动调用flush方法。
 ```
+
+当创建Socket对象时，操作系统将会为InputStream和OutputStream分配一定大小的缓存区。写入端将数据写到OutputStream对应的SendQ队列中，当队列填满时，数据被转移到另一端的InputStream的RecvQ队列中，如果RecvQ已经满了，那么OutputStream的write方法将会阻塞。
 
 为多个客户端服务
 
@@ -4296,12 +4332,31 @@ public class MailUtils {
 
 ### 远程调用
 
+远程代理：远程对象的本地代表。
+
+远程对象：活在不同JVM堆中的对象。或，在不同的地址空间运行的远程对象
+
+本地代表：可以由本地方法调用的对象，其行为会转发到远程对象中。
+
+RMI介绍
+
+- 客户对象
+- 客户辅助对象(stub)
+    1. 有远程对象的方法，看起来像远程对象。
+    2. 会联系服务器，传送方法调用信息，等待服务器返回
+    3. 将得到的信息解包，将返回值交给客户对象
+- 服务辅助对象(skeleton)
+    1. 从客户辅助对象中接收请求（通过Socket连接）
+    2. 将调用信息解包，然后调用真正服务对象上的真正方法。
+    3. 将返回值打包，发送到客户辅助对象
+- 服务对象
+
 创建RMI远程服务的步骤
 
-1. 创建远程接口
+1. 创建远程接口：定义客户远程调用的方法
     1. Remote是个标记性接口，你需要继承它并创建自己的接口来实现远程调用的方法
     2. 声明所有的方法都会抛出RemoteException
-    3. 确定参数和返回值都是primitive主数据类型或是Serializable
+    3. 确定参数和返回值都是primitive主数据类型或是可序列化的(Serializable)
 
 ```java
 public interface MyRemote extends Remote{
@@ -4316,15 +4371,17 @@ public interface MyRemote extends Remote{
     4. 向RMI registry注册服务
 	
 ```java
+// 服务端的代码
 public class MyRemoteImpl extends UnicastRemoteObject implements MyRemote {
 	public String sayHello(){
 		return "Server says, 'hey'";
     }
-
+    // 3
 	public MyRemoteImpl() throws RemoteException{}
 
     public static void main(String[] args){
     	try{
+            // 4
     		MyRemote service = new MyRemoteImpl();
     		Naming.rebind("Remote Hello", service);//帮服务命名（客户端会靠名字查询registry）并向RMI registry注册
     	}catch(Exception ex){...}
@@ -4332,20 +4389,31 @@ public class MyRemoteImpl extends UnicastRemoteObject implements MyRemote {
 }
 ```
 
-3. 产生stub和skeleton
-    1. 对实现出的类执行rmic `%rmic MyRemoteImpl`
+3. 产生stub和skeleton：对实现出的类执行rmic `%rmic MyRemoteImpl`
 4. 执行rmiregistry `%rmiregistry`
 5. 启动服务。调用另一个命令行来启动服务 `%java MyRemoteImpl`
 
-客户端取得stub对象
+客户取得stub对象
 
-1. 客户端查询RMI registry
+1. 客户查询RMI registry
+2. RMI registry返回stub对象
+3. 客户使用stub对象
 
 ```java
-MyRemote service = (MyRemote) Naming.lookup("rmi://127.0.0.1/Remote Hello") // Remote Hellos是注册的名字
+public class MyRemoteClient {
+    public static void main(String[] args) {
+        try {
+            // 获取stub
+            MyRemote service = (MyRemote) Naming.lookup("rmi://127.0.0.1/Remote Hello") // Remote Hellos是注册的名字
+            String s = service.sayHello();
+        } catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+}
 ```
 
-2. RMI registry返回stub对象
+![RMI](images/Java/RMI.png)
 
 ## 时间和日期API
 
@@ -4671,6 +4739,28 @@ public class MyClassLoader extends ClassLoader {
 ```
 
 loadClass 方法用于将类的加载操作委托给父类加载器去进行。只有父类加载器无法加载时，才调用findClass方法。
+
+ClassLoader中的几个方法
+
+```java
+// 将byte字节流解析成JVM能识别的Class对象
+Class<?> defineClass(byte[], int, int)
+// 实现类的加载机制
+Class<?> findClass(String)
+Class<?> loadClass(String)
+void resolveClass(Class<?>)
+
+// 常用实现类
+URLClassLoader
+```
+
+调试需要的一些方法
+
+```java
+// 获取当前的 classpath 路径
+this.getClass().getClassLoader.getResource("").toString()
+```
+
 
 ## 参考资料
 
