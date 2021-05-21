@@ -1499,7 +1499,7 @@ rainy声明：以下代理相关的内容为个人理解，可能存在偏差
 
 生成一个代理类对象的步骤
 
-1. 生成代理类对象，需要使用 `Proxy.newProxylnstance(ClassLoader , Class[], InvokeHandler);` 方法，参数依次是：加载接口需要的ClassLoader、代理类需要实现的接口数组（即目标对象的类实现的接口）、方法增强的内容的实现，即调用处理器。
+1. 生成代理类对象，需要使用 `Proxy.newProxyInstance(ClassLoader , Class[], InvokeHandler);` 方法，参数依次是：加载接口需要的ClassLoader、代理类需要实现的接口数组（即目标对象的类实现的接口）、方法增强的内容的实现，即调用处理器。
 2. 如果是自定义的接口，ClassLoader推荐使用 `Thread.currentThread().getContextClassLoader()`
 3. InvokeHandler是一个接口，只有一个方法 `Object invoke(Object proxy, Method method, Object[] args)` 需要定义一个类实现它。无论何时调用目标对象的方法，调用处理器的invoke方法都会被调用。method代表正在执行的方法，args是方法等参数。
 4. 使用代理类对象，调用目标对象对应的方法，路径是：`代理类对象的方法-->InvokeHandler的invoke方法-->目标对象的方法` 
@@ -1514,6 +1514,7 @@ public class MyProxyTest {
         // 需要实现的接口
         Class[] interfaces = new Class[] {Rainy.class};
         // 创建代理类，代理类实现了接口中的方法，这些方法调用InvokeHandler里的invoke方法
+        // Object proxy = Proxy.newProxyInstance(MyClass.getClassLoader(), MyClass.getIninterfaces(), handler);
         Object proxy = Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), interfaces, handler);
         // 调用方法
         ((Rainy)proxy).printRainy();
