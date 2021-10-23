@@ -75,66 +75,9 @@ ipconfig /displaydns
 ipconfig /flushdns
 ```
 
-### less
 
-常用的键盘命令
 
-|命令|行为|
-|--|--|
-|Page UP or b|向上翻滚一页|
-|Page Down or space|向下翻滚一页|
-|UP Arrow|向上翻滚一行|
-|Down Arrow|向下翻滚一行|
-|G|移动到最后一行|
-|1G or g|移动到开头一行|
-|/charaters|向前查找指定的字符串|
-|n|向前查找下一个出现的字符串，这个字符串是之前所指定查找的|
-|h|显示帮助屏幕|
-|q|退出 less 程序|
 
-### vi或vim
-
-|分组|命令|作用|
-|--|--|--|
-|插入|i|插入到光标位置|
-|复制或粘贴|yy|复制单行|
-||nyy|复制多行|
-||p|粘贴|
-|定位|gg|到文本的第一行|
-||shift+gg|到文本最后一行|
-||shift+4|光标定位到行尾|
-||shift+6|光标定位到行首|
-|删除|dd|删除光标所在行|
-||ndd|删除n行|
-|退出|:q|退出（未修改内容时）|
-||:q!|退出不保存|
-||:w|保持不退出|
-||:wq|保持退出|
-|查询|/查询的字符串|在非编辑模式下，输入/再输入查询的字符串|
-||n|查询下一个命中的字符串|
-||N|查询上一个命中的字符串|
-|替换|:s|将某个文本替换成另一个文本|
-||:s/str1/str2/| 用字符串 str2 替换行中首次出现的字符串 str1|
-||:s/str1/str2/g|用字符串 str2 替换行中所有出现的字符串 str1|
-||:%s/str1/str2/|替换每一行的第一个 str1 为 str2|
-||:%s/str1/str2/g|替换每一行中所有 str1 为 str2|
-||:1,$ s/str1/str2/g|功能同上|
-||:g/str1/s//str2/g|功能同上|
-||:.,$ s/str1/str2/g|用字符串 str2 替换正文当前行到末尾所有出现的字符串 str1|
-|撤销|u|撤销刚才的操作|
-||ctrl+r|恢复刚才撤销的动作|
-|其他|:set number|显示行号|
-||w !sudo tee %|修改只读文件|
-
-解释如下：
-
-:w – Write a file.
-
-!sudo – Call shell sudo command.
-
-tee – The output of write (vim :w) command redirected using tee.
-
-% – is nothing but current file name
 
 ### grep
 
@@ -328,9 +271,13 @@ sudo kill -9 61342
 
 
 
-Linux Command Line
+# Linux Command Line
 
 ## shell 相关
+
+shell 就是一个程序，它接受从键盘输入的命令，然后把命令传递给操作系统去执行。
+
+bash （Bourne Again SHell） 是 shell 的一种。bash 是 sh 的增强版，sh 是最初 Unix 的 shell 程序。
 
 简单命令
 
@@ -338,14 +285,16 @@ Linux Command Line
 |--|--|
 |date|显示当前时间和日期|
 |cal|显示当前月份的日历|
-|df|硬盘空闲空间|
+|df -h|硬盘空闲空间|
 |free|内存空闲空间|
 |exit|关闭终端session|
 
 ### 查看文件系统
 
+文件名和命令名是大小写敏感的。
+
 |命令|参数or选项|说明|
-|--|--|
+|---|--------|---|
 |pwd||打印当前工作目录 print working directory|
 |cd|pathname|改变目录 change directory to pathname|
 ||cd|切换到home directory|
@@ -354,10 +303,22 @@ Linux Command Line
 |ls|pathname|列出pathname目录的内容 list directory|
 ||-a|列出所有文件，包括隐藏文件(名字以.开头的文件)|
 ||pathname1 pathname2|列出多个目录下的文件|
-||-l|使显示内容为long format|
+||-l|使显示内容为long format，显示文件的更多属性|
+||-i|显示文件的索引节点号|
 ||-t|以修改时间排序|
+||--reverse|反向排序|
 |file|filename|查看文件类型|
 |less||查看文件内容|
+
+```sh
+# 格式  command -options arguments
+
+# options 有2种格式
+# 1. 短格式：-  单个字符，如ls -l。多个option可以合并，如
+ls -la
+# 2. 长格式：-- 单词，如
+ls -lt --reverse。
+```
 
 每一个用户都有一个 home directory，在这个目录下才能写入文件。
 
@@ -375,11 +336,6 @@ pathname 路径说明
 - 命令和目录对大小写敏感。
 - 类Unix系统可以任意命名文件，扩展名对这类系统没有意义（但某些应用依赖扩展名定义文件类型）
 - 文件名里的标点，尽量仅使用`.`, `-`, `_`。文件名中不要使用空格。
-
-options 有2种格式
-
-1. 短格式：-单个字符，如ls -l。多个option可以合并，如ls -la
-2. 长格式：--单词，如ls -lt --reverse。
 
 ls 命令的选项表
 
@@ -412,6 +368,24 @@ ls 命令的选项表
 |2007-04-03 11:05|上次修改文件的时间和日期。|
 |oo-cd-cover.odf|文件名。|
 
+#### less
+
+常用的键盘命令
+
+|命令|行为|
+|--|--|
+|Page UP or b|向上翻滚一页|
+|Page Down or space|向下翻滚一页|
+|UP Arrow|向上翻滚一行|
+|Down Arrow|向下翻滚一行|
+|G|移动到最后一行|
+|1G or g|移动到开头一行|
+|/charaters|向前查找指定的字符串|
+|n|向前查找下一个出现的字符串，这个字符串是之前所指定查找的|
+|h|显示帮助屏幕|
+|q|退出 less 程序|
+
+
 ### 操作文件和目录
 
 |命令|参数or选项|说明|
@@ -425,17 +399,58 @@ ls 命令的选项表
 |ln|file link|创建硬链接|
 ||-s item link|创建符号链接，item是目标文件相对于符号链接的路径，或者目标文件的绝对路径|
 
+cp命令
+
+|选项|意义|
+|---|----|
+|-a, --archive|复制文件和目录，以及它们的属性，包括所有权和权限。通常，复本具有用户所操作文件的默认属性。|
+|-i, --interactive|在重写已存在文件之前，提示用户确认。如果这个选项不指 定，cp 命令会默认重写文件。|
+|-r, --recursive|递归地复制目录及目录中的内容。当复制目录时，需要这个 选项(或者 -a 选项)。|
+|-u, --update|当把文件从一个目录复制到另一个目录时，仅复制目标目录中不存在的文件，或者是文件内容新于目标目录中已经存在的文件。|
+|-v, --verbose|显示翔实的命令操作信息|
+
 ```sh
+cp file1 file2
+cp -i file1 file2
+cp file1 file2 dir1
+cp dir1/* dir2
+cp -r dir1 dir2
+
+mv file1 file2
+mv -i file1 file2
+mv file1 file2 dir1
+mv dir1 dir2 # 移动目录 dir1(及它的内容)到目录 dir2
+
+rm file1
+rm -i file1
+rm -r file1 dir1
+rm -rf file1 dir1 # -f, --force 忽视不存在的文件，不显示提示信息。
+# 删除前，可以先用ls查看要删除的内容，再使用rm删除
+
+# 硬链接
+ln file link
+# 软链接
+ln -s item link
 # 修改软链接
 ln –snf [新的源文件或目录] [软链接文件]
 # 删除软链接
 rm –rf ./软链接名称
+
+ln fun fun-hard
+ln fun dir1/fun-hard
+ln -s fun fun-sym
+ln -s ../fun dir1/fun-sym
+ln -s /home/me/playground/fun dir1/fun-sym
+ln -s dir1 dir1-sym
 ```
+
+硬链接：一个文件的所有硬链接被删除，则这个文件被删除。硬链接不能跨物理设备，不能关联目录。
+软链接：类似Windows的快捷方式，文件被删除，但快捷方式还在，只是指向的内容不存在了。
 
 通配符
 
 |通配符|说明|
-|---|---|
+|----|----|
 |*|匹配任意字符|
 |?|匹配单个字符|
 |[characters]|匹配集合中的任意一个字符|
@@ -456,8 +471,8 @@ rm –rf ./软链接名称
 
 |命令|参数or选项|说明|
 |---|---------|---|
-|type|command|显示一个指令的类型|
-|which|command|显示可执行程序的安装路径|
+|type|command|说明怎样解释一个命令名|
+|which|command|显示会执行哪个可执行程序|
 |help|shell_builtins|shell builtin的帮助|
 ||mkdir --help|可执行程序的--help选项，显示指令支持的语法和选项|
 |man|program|显示一个指令的说明手册，使用less来展示页面|
@@ -476,6 +491,16 @@ rm –rf ./软链接名称
 2. shell的内建指令。被称为 shell builtins
 3. shell程序。
 4. 别名。可以从其他命令自定义。
+
+```sh
+type ls
+which cp
+help cd # 适用于 shell 内部命令
+mkdir --help # 适用于可执行程序
+man ls
+alias foo='cd /usr; ls; cd -'
+unalias foo # 删除别名
+```
 
 Man Page Organization
 
@@ -522,7 +547,7 @@ info Commands
 |sort||Sort lines of text|
 |uniq||通常和sort一起使用。接受排序的list并去除重复项|
 ||-d|查看已排序list中的重复项|
-|grep|pattern [file...]|查找文件中符合pattern的行|
+|grep|pattern [file...]|打印文件中符合pattern的行|
 ||-i|查找时忽视大小写|
 ||-v|打印不符合pattern的行|
 |wc|filename|word count，显示一个文件中行、词、字节的个数|
@@ -591,9 +616,28 @@ ls /bin /usr/bin | sort | less
 ls /bin /usr/bin | sort | uniq | less
 # 查看重复项
 ls /bin /usr/bin | sort | uniq -d | less
+
+wc ls-output.txt
+# 行 字数 字节数
+
+ls /bin /usr/bin | sort | uniq | grep zip
+
+ls /usr/bin | tee ls.txt | grep zip # ls.txt 是 ls 出的内容
 ```
 
-### echo
+## 从 shell 眼中看世界
+
+当回车键被按下时，shell 在命令被执行前在命令行上自动展开任何符合条件的字符。
+
+如 * 被展开成当前目录下的文件名。 echo 能看到展开效果。
+
+- 字符展开
+- 路径展开
+- 波浪线展开
+- 算术表达式展开
+- 花括号展开
+- 参数展开
+- 命令替换
 
 ```sh
 # 显示目录
@@ -604,42 +648,32 @@ ehco [[:upper:]]*
 # 显示用户的主目录
 echo ~
 ecoh ~foo
-# 计算
+# 计算 $((expression))
 echo $((2+2))
+echo $(((5**2) * 3)) # ** 取幂
 # 大括号brace expansion
 echo Num{1..3} # Num1 Num2 Num3
 echo {01..03} # 01 02 03
+echo a{A{1,2},B{3,4}}b # aA1b aA2b aB3b aB4b
 # 打印参数
 echo $USER
 # 当前可用参数
 printenv | less
-# 显示cp命令的目录
-ls -l $(which cp)
-```
+# 命令替换
+echo $(ls)
+ls -l $(which cp) # -rwxr-xr-x 1 root root 71516 2007-12-05 08:58 /bin/cp
+file $(ls /usr/bin/* | grep zip)
 
-双引号
-
-双引号中的 
-
-```sh
-空格 \ ~ {}  
-```
-将被当作普通字符
-
-```sh
-$USER $((2+2)) $(cal)
-```
-仍可执行
-
-单引号
-
-单引号中的所有字符都被当成普通字符。
-
-转义字符 `\`
-```sh
-echo "\$5.00" # $5.00
+# 禁止展开
+## 双引号 除 $ \ ` 外的字符，失去特殊含义
+ls -l "two words.txt"
+echo "$USER $((2+2)) $(cal)" # 可执行
+## 单引号 禁止所有展开
+echo 'text ~/*.txt {a,b} $(echo foo) $((2+2)) $USER' # text ~/*.txt  {a,b} $(echo foo) $((2+2)) $USER
+## 转义字符 `\`
 echo bad\&fimename # bad&filename
-# -e选项 使用转移序列
+echo "\$5.00" # $5.00
+# -e选项 使用转义序列
 sleep 10; echo -e "Time's up\a"
 ```
 
@@ -648,6 +682,7 @@ sleep 10; echo -e "Time's up\a"
 |命令|参数or选项|说明|
 |---|---------|---|
 |clear||清屏|
+|history||显示历史列表|
 
 光标移动命令
 
@@ -732,7 +767,7 @@ history 命令
 
 mod 表示文件的权限。由10个字母组成(ll命令的结果，第一列就是mod)。例子：`-rwxrwxrwx`
 
-- 第一个字母表示文件类型。-表示文件，d表示目录，l表示链接
+- 第一个字母表示文件类型。-表示文件，d表示目录，l表示链接，c字符设备文件，b块设备文件（硬盘）。
 - 之后3个字母表示owner的权限，即文件所有者的权限。r表示读，w表示写，x表示可执行，-表示没有该权限。
 - 再后3个字母表示group的权限，即文件所有者所在组的其他人的权限。
 - 最后3个字母表示world的权限，即其余所有使用这台计算机的人的权限。
@@ -799,6 +834,901 @@ umask
 |su|[-[l]][user]|用其他用户身份新建一个shell。如果有-l选项（可以简写为-），新建的shell是登录后的shell，即会切换到用户的主目录下。不指定user时，默认时root用户|
 ||-c 'command'|新建shell运行command后，立马返回|
 |sudo||被授权后，可以以其他用户的身份运行命令|
+
+sudo 不会重新启动一个 shell，也不会加载 另一个用户的 shell 运行环境
+
+```sh
+# 切换到root用户
+su -
+# 将命令传递到新shell运行
+su -c 'ls -l /root/*'
+# 查看sudo能运行的命令
+sudo -l
+# 更改文件所有者和用户组 chown 所有者:用户组
+chown bob
+chown bob:users
+chown :admins
+chown bob:  # 文件所有者改为用户 bob，文件用户组改为，用户 bob 登 录系统时，所属的用户组。
+# 更改用户密码
+passwd [user]
+```
+
+## 进程
+
+| 状态 | 意义 |
+|-----|-----|
+|R |运行。这意味着，进程正在运行或准备运行。|
+|S |正在睡眠。进程没有运行，而是，正在等待一个事件，比如 说，一个按键或者网络数据包。|
+|D |不可中断睡眠。进程正在等待 I/O，比方说，一个磁盘驱动 器的 I/O。|
+|T |已停止. 已经指示进程停止运行。稍后介绍更多。|
+|Z |一个死进程或“僵尸”进程。这是一个已经终止的子进程， 但是它的父进程还没有清空它。(父进程没有把子进程从进程表中删除)|
+|< |一个高优先级进程。这可能会授予一个进程更多重要的资源，给它更多的 CPU 时间。进程的这种属性叫做 niceness。具有高优先级的进程据说是不好的(less nice)，因为它占用了比较多的 CPU 时间，这样就给其它进程留下很少时间。|
+|N |低优先级进程。一个低优先级进程(一个“好”进程)只有 当其它高优先级进程执行之后，才会得到处理器时间。|
+
+
+```sh
+# 列出当前终端的进程 TTY 是 “Teletype” 的简写，是指进程的控制终端。TIME 字段表示进程所消耗的 CPU 时间数量。
+ps
+ps x  # 所有进程
+ps aux # 所有进程的详细信息
+```
+
+标题 意思
+USER 用户 ID. 进程的所有者。
+%CPU 以百分比表示的 CPU 使用率
+%MEM 以百分比表示的内存使用率
+VSZ 虚拟内存大小
+RSS 进程占用的物理内存的大小，以千字节为单位。
+START 进程运行的起始时间。若超过 24 小时，则用天表示。
+
+```sh
+# 连续显示系统进程更新的信息(默认情况下，每三分钟更新一次)
+top
+```
+
+|行号 |字段 |意义|
+|1 |top|程序名。|
+||14:59:20|当前时间。|
+||up 6:30|这是正常运行时间。它是计算机从上次启动到现在所 运行的时间。在这个例子里，系统已经运行了六个半 小时。|
+||2 users|有两个用户登录系统。|
+||load average:|加载平均值是指，等待运行的进程数目，也就是说， 处于运行状态的进程个数，这些进程共享 CPU。展示 了三个数值，每个数值对应不同的时间周期。第一个 是最后 60 秒的平均值，下一个是前 5 分钟的平均值， 最后一个是前 15 分钟的平均值。若平均值低于 1.0， 则指示计算机工作不忙碌。|
+|2 |Tasks:|总结了进程数目和各种进程状态。|
+|3 |Cpu(s):|这一行描述了 CPU 正在执行的进程的特性。|
+||0.7%us|0.7% of the CPU is being used for user processes. 这 意味着进程在内核之外。|
+||1.0%sy|1.0% 的 CPU 时间被用于系统(内核)进程。|
+||0.0%ni|0.0% 的 CPU 时间被用于”nice”(低优先级)进程。|
+||98.3%id|98.3% 的 CPU 时间是空闲的。|
+||0.0%wa|0.0% 的 CPU 时间来等待 I/O。|
+|4 |Mem:|展示物理内存的使用情况。|
+|5 |Swap:|展示交换分区(虚拟内存)的使用情况。|
+
+top 程序接受一系列从键盘输入的命令。h，显示程序的帮助 屏幕，q，退出 top 程序。
+
+在一个终端中，输入 Ctrl-c，中断一个程序。Ctrl-z，可以停止一个前台进程。
+
+在使用 Ctrl-c 的情况下，会发送一个叫做 INT(中断)的信 号;当使用 Ctrl-z 时，则发送一个叫做 TSTP(终端停止)的信号。程序，反过来，倾听信号 的到来，当程序接到信号之后，则做出响应。
+
+```sh
+# 后台运行，显示的数字为pid
+xlogo &
+# 列出从终端中启动的任务
+jobs
+# 让一个进程返回前台执行
+fg %1
+# 把程序移到后台。
+bg %1
+# 指定我们想要终止的进程 PID。  kill [-signal] PID...
+kill 28401
+kill -l # 完整信号表
+# 给多个进程发送信号
+killall [-u user] [-signal] name...
+```
+
+kill 命令的信号
+
+|编号 |名字 |含义|
+|----|----|----|
+|1 |HUP|挂起。这是美好往昔的痕迹，那时候终端机通过电话 线和调制解调器连接到远端的计算机。这个信号被用 来告诉程序，控制的终端机已经“挂起”。通过关闭 一个终端会话，可以说明这个信号的作用。发送这个 信号到终端机上的前台程序，程序会终止。许多守护 进程也使用这个信号，来重新初始化。这意味着，当 发送这个信号到一个守护进程后，这个进程会重新启 动，并且重新读取它的配置文件。Apache 网络服务 器守护进程就是一个例子。|
+|2 |INT|中断。实现和 Ctrl-c 一样的功能，由终端发送。通常， 它会终止一个程序。|
+|9 |KILL |杀死。这个信号很特别。鉴于进程可能会选择不同的 方式，来处理发送给它的信号，其中也包含忽略信号， 这样呢，从不发送 Kill 信号到目标进程。而是内核立 即终止这个进程。当一个进程以这种方式终止的时候， 它没有机会去做些“清理”工作，或者是保存劳动成 果。因为这个原因，把 KILL 信号看作杀手锏，当其 它终止信号失败后，再使用它。|
+|15 |TERM |终止。这是 kill 命令发送的默认信号。如果程序仍然 “活着”，可以接受信号，那么这个信号终止。|
+|18 |CONT |继续。在停止一段时间后，进程恢复运行。|
+|19 |STOP |停止。这个信号导致进程停止运行，而没有终止。像 KILL 信号，它不被发送到目标进程，因此它不能被忽略。|
+
+
+命令名  命令描述
+pstree  输出一个树型结构的进程列表，这个列表展示了进程间 父/子关系。
+vmstat  输出一个系统资源使用快照，包括内存，交换分区和磁盘 I/O。为了看到连续的显示结果，则在命令名后加上延时的 时间(以秒为单位)。例如，“vmstat 5”。终止输出，按下 Ctrl-c 组合键。
+xload 一个图形界面程序，可以画出系统负载的图形。
+tload 与 xload 程序相似，但是在终端中画出图形。使用 Ctrl-c， 来终止输出。
+
+## shell 环境
+
+- printenv 打印部分或所有的环境变量
+- set 设置 shell 选项
+- export 导出环境变量，让随后执行的程序知道。
+- alias 创建命令别名
+
+shell 在环境中存储了两种基本类型的数据：环境变量和 shell 变量。
+
+```sh
+printenv | less
+printenv USER
+
+set | less
+echo $HOME
+
+alias
+```
+
+登录 shell 会读取一个或多个启动文件，正如表所示:
+| 文件 | 内容 |
+|---|---|
+| /etc/profile |应用于所有用户的全局配置脚本。|
+| ̃/.bash_profile |用户私人的启动文件。可以用来扩展或重写全局配置脚本中的设置。|
+| ̃/.bash_login |如果文件  ̃/.bash profile 没有找到，bash 会尝试读取这个脚本。|
+| ̃/.profile |如果文件  ̃/.bash profile 或文件  ̃/.bash login 都没有找到， bash 会试图读取这个文件。这是基于 Debian 发行版的默认 设置，比方说 Ubuntu。|
+
+非登录 shell 会话(GUI建的会话)会读取以下启动文件，并继承它们父进程的环境设置
+
+|文件|内容|
+|---|---|
+| /etc/bash.bashrc |应用于所有用户的全局配置文件。|
+| ̃/.bashrc |用户私有的启动文件。可以用来扩展或重写全局配置脚本中的设置。|
+
+```sh
+# 告诉 shell 让这个 shell 的子进程可以使用 PATH 变量的内容
+export PATH
+# 强迫 bash 重新读取修改过的.bashrc 文件
+source .bashrc
+```
+
+### vi或vim
+
+|分组|命令|作用|
+|--|--|--|
+|插入|i|插入到光标位置|
+||A|在当前行尾插入|
+||o|当前行的下方打开一行。|
+||O|当前行的上方打开一行。|
+|复制或粘贴|yy|复制单行|
+||nyy|复制多行|
+||p|粘贴|
+||P|粘贴到上一行|
+|定位|gg|到文本的第一行|
+||shift+gg|到文本最后一行|
+||shift+4|光标定位到行尾|
+||shift+6|光标定位到行首|
+|删除|dd|删除光标所在行|
+||ndd|删除n行|
+||x|删除光标处的字符|
+|退出|:q|退出（未修改内容时）|
+||:q!|退出不保存|
+||:w|保持不退出|
+||:wq|保持退出|
+|查询|/查询的字符串|在非编辑模式下，输入/再输入查询的字符串|
+||n|查询下一个命中的字符串|
+||N|查询上一个命中的字符串|
+|查询一行|fx|查找当前行中的x字符，用;重复查找|
+|替换|:s|将某个文本替换成另一个文本|
+||:s/str1/str2/| 用字符串 str2 替换行中首次出现的字符串 str1|
+||:s/str1/str2/g|用字符串 str2 替换行中所有出现的字符串 str1|
+||:%s/str1/str2/|替换每一行的第一个 str1 为 str2|
+||:%s/str1/str2/g|替换每一行中所有 str1 为 str2|
+||:1,$ s/str1/str2/g|功能同上|
+||:g/str1/s//str2/g|功能同上|
+||:.,$ s/str1/str2/g|用字符串 str2 替换正文当前行到末尾所有出现的字符串 str1|
+|撤销|u|撤销刚才的操作|
+||ctrl+r|恢复刚才撤销的动作|
+|其他|:set number|显示行号|
+||w !sudo tee %|修改只读文件|
+|连接行|J|将本行和下一行连成一行，用空格隔开|
+
+解释如下：
+
+:w – Write a file.
+
+!sudo – Call shell sudo command.
+
+tee – The output of write (vim :w) command redirected using tee.
+
+% – is nothing but current file name
+
+| 按键 | 移动光标 |
+|----|----|
+|l or 右箭头|向右移动一个字符|
+|h or 左箭头|向左移动一个字符|
+|j or 下箭头|向下移动一行|
+|k or 上箭头|向上移动一行|
+|0 (零按键)|移动到当前行的行首。|
+|ˆ|移动到当前行的第一个非空字符。|
+|$|移动到当前行的末尾。|
+|w|移动到下一个单词或标点符号的开头。|
+|W|移动到下一个单词的开头，忽略标点符号。|
+|b|移动到上一个单词或标点符号的开头。|
+|B|移动到上一个单词的开头，忽略标点符号。|
+|Ctrl-f or Page Down|向下翻一页|
+|Ctrl-b or Page Up|向上翻一页|
+|numberG|移动到第 number 行。例如，1G 移动到文件的 第一行。|
+|G|移动到文件末尾。|
+
+删除操作
+
+命令 删除的文本
+x 当前字符
+3x 当前字符及其后的两个字符。
+dd 当前行。
+5dd 当前行及随后的四行文本。
+dW 从光标位置开始到下一个单词的开头。
+d$ 从光标位置开始到当前行的行尾。
+d0 从光标位置开始到当前行的行首。
+dˆ 从光标位置开始到文本行的第一个非空字符。
+dG 从当前行到文件的末尾。
+d20G 从当前行到文件的第 20 行。
+
+复制命令
+
+
+命令 复制的内容
+yy 当前行。
+5yy 当前行及随后的四行文本。
+yW 从当前光标位置到下一个单词的开头。
+y$ 从当前光标位置到当前行的末尾。
+y0 从当前光标位置到行首。
+yˆ 从当前光标位置到文本行的第一个非空字符。
+yG 从当前行到文件末尾。
+y20G 从当前行到文件的第 20 行。
+
+
+## 查找文件
+
+find
+
+```sh
+# 输出主目录及以下的文件
+find ~
+# 增加测试条件：文件类型
+find ~ -type f
+# 增加测试条件：文件名
+find ~ -type f -name "*.JPG" -size +1M | wc -l
+# 逻辑操作符
+find ~ \( -type f -not -perm 0600 \) -or \( -type d -not -perm 0700 \)
+
+# 用户定义的行为  -exec command {} ;
+find ~ -type f -name 'foo*' -exec ls -l '{}' ';'
+find ~ -type f -name 'foo*' -exec ls -l '{}' + # 将查找出来的结果，合并成命令行的参数
+```
+
+find 命令支持的普通文件类型测试条件:
+文件类型 描述
+b 块设备文件
+c 字符设备文件
+d 目录
+f 普通文件
+l 符号链接
+
+下面的字符可以被用来指定测量单位:
+字符 单位
+b 512 个字节块。如果没有指定单位，则这是默认值。
+c 字节
+w 两个字节的字
+k 千字节 (1024 个字节单位)
+M 兆字节 (1048576 个字节单位)
+G 千兆字节 (1073741824 个字节单位)
+
+
+测试条件	描述
+ -cmin n	匹配的文件和目录的内容或属性最后修改时间正好在 n 分 钟之前。指定少于 n 分钟之前，使用 -n，指定多于 n 分钟 之前，使用 +n。
+ -cnewer file	匹配的文件和目录的内容或属性最后修改时间早于那些文 件。
+ -ctime n	匹配的文件和目录的内容和属性最后修改时间在 n\*24 小 时之前。
+ -empty	匹配空文件和目录。
+ -group name	匹配的文件和目录属于一个组。组可以用组名或组 ID 来表 示。
+ -iname pattern	就像 -name 测试条件，但是大小写敏感。
+ -inum n	匹配的文件的 inode 号是 n。这对于找到某个特殊 inode 的 所有硬链接很有帮助。
+ -mmin n	匹配的文件或目录的内容被修改于 n 分钟之前。
+ -mtime n	匹配的文件或目录的内容被修改于 n\*24 小时之前。
+ -name pattern	用指定的通配符模式匹配的文件和目录。
+ -newer file	匹配的文件和目录的内容早于指定的文件。当编写 shell 脚 本，做文件备份时，非常有帮助。每次你制作一个备份，更 新文件(比如说日志)，然后使用 find 命令来决定自从上次 更新，哪一个文件已经更改了。
+ -nouser	匹配的文件和目录不属于一个有效用户。这可以用来查找属于删除帐户的文件或监测攻击行为。
+ -nogroup	匹配的文件和目录不属于一个有效的组。
+ -perm mode	匹配的文件和目录的权限已经设置为指定的 mode。mode 可以用八进制或符号表示法。
+ -samefile name	相似于 -inum 测试条件。匹配和文件 name 享有同样 inode 号的文件。
+ -size n	匹配的文件大小为 n。
+ -type c	匹配的文件类型是 c。
+ -user name	匹配的文件或目录属于某个用户。这个用户可以通过用户名 或用户 ID 来表示。
+
+
+操作符列表:
+操作符 描述
+-and 匹配如果操作符两边的测试条件都是真。可以简写为 -a。 注意若没有使用操作符，则默认使用 -and。
+-or 匹配若操作符两边的任一个测试条件为真。可以简写为 -o。
+-not 匹配若操作符后面的测试条件是真。可以简写为一个感叹号 (!)。
+() 把测试条件和操作符组合起来形成更大的表达式。这用来 控制逻辑计算的优先级。默认情况下，find 命令按照从左到 右的顺序计算。经常有必要重写默认的求值顺序，以得到期 望的结果。即使没有必要，有时候包括组合起来的字符，对 提高命令的可读性是很有帮助的。注意因为圆括号字符对 于 shell 来说有特殊含义，所以在命令行中使用它们的时候， 它们必须用引号引起来，才能作为实参传递给 find 命令。 通常反斜杠字符被用来转义圆括号字符。
+
+### xargs
+xargs 命令会执行一个有趣的函数。它从标准输入接受输入，并把输入转换为一个特定命令的参数列表。
+
+```sh
+find ~ -type f -name 'foo\*' -print | xargs ls -l
+```
+
+## 归档和备份
+
+```sh
+gzip foo.txt
+gzip -d foo.txt.gz
+# 测试压缩包的完整性
+gzip -tv foo.txt.gz
+# 查看压缩内容
+gunzip -c foo.txt | less
+
+
+bzip2 foo.txt
+bunzip2 foo.txt.bz2
+```
+
+gzip 命令有许多选项。这里列出了一些:
+选项 说明
+-c 把输出写入到标准输出，并且保留原始文件。也有可能用 --stdout 和 --to-stdout 选项来指定。
+-d 解压缩。正如 gunzip 命令一样。也可以用 --decompress 或 者 --uncompress 选项来指定.
+-f 强制压缩，即使原始文件的压缩文件已经存在了，也要执 行。也可以用 --force 选项来指定。
+-h 显示用法信息。也可用 --help 选项来指定。
+-l 列出每个被压缩文件的压缩数据。也可用 --list 选项。
+-r 若命令的一个或多个参数是目录，则递归地压缩目录中的文 件。也可用 --recursive 选项来指定。
+-t 测试压缩文件的完整性。也可用 --test 选项来指定。
+-v 显示压缩过程中的信息。也可用 --verbose 选项来指定。
+-number 设置压缩指数。number 是一个在 1(最快，最小压缩)到 9(最慢，最大压缩)之间的整数。数值 1 和 9 也可以各自
+用 --fast 和 --best 选项来表示。默认值是整数 6。
+
+
+归档
+
+```sh
+# 归档
+tar cf playground.tar playground
+# 归档（绝对路径） 当创建归档文件的时候，tar 命令会简单地删除路径名开头的斜杠
+tar cf playground2.tar ~/playground
+# 列出内容
+tar tvf playground.tar
+# 抽取压缩包内容到当前目录
+tar xf ../playground.tar
+# 追加添加到压缩包
+find playground -name 'file-A' -exec tar rf playground.tar '{}' '+'
+# -T == --files-from; - 表示标准输入/输出
+find playground -name 'file-A' | tar cf - --files-from=- | gzip > playground.tgz
+# tar 命令， gzip 和 bzip2 压缩两者都直接支持，各自使用 z 和 j 选项
+find playground -name 'file-A' | tar czf playground.tgz -T -
+# 远程
+ssh remote-sys 'tar cf - Documents' | tar xf -
+```
+
+模式 说明
+c 为文件和/或目录列表创建归档文件。
+x 抽取归档文件。
+r 追加具体的路径到归档文件的末尾。
+t 列出归档文件的内容。
+
+
+同步
+
+```sh
+# 同步 playground 到 foo 目录。 -a 选项(递归和保护文件属性)和 -v 选项(冗余输出)
+rsync -av playground foo
+# --delete 这个选项，来删除可能在备份设备中已经存在但却不再存在于源 设备中的文件
+rsync -av --delete /etc /home /usr/local /media/BigDisk/backup
+# 在网络间同步
+rsync -av --delete --rsh=ssh /etc /home /usr/local remote-sys:/backup
+rsync -av --delete rsync://rsync.gtlib.gatech.edu/fedora-linux-core/development/i386/os fedora-devel
+```
+
+## grep 中使用正则表达式
+
+grep 选项列表:
+选项 描述
+-i 忽略大小写。不会区分大小写字符。也可用 --ignore-case 来 指定。
+-v 不匹配。通常，grep 程序会打印包含匹配项的文本行。这 个选项导致 grep 程序只会不包含匹配项的文本行。也可用 --invert-match 来指定。
+-c 打印匹配的数量(或者是不匹配的数目，若指定了 -v 选 项)，而不是文本行本身。也可用 --count 选项来指定。
+-l 打印包含匹配项的文件名，而不是文本行本身，也可用 --files-with-matches 选项来指定。
+-L 相似于 -l 选项，但是只是打印不包含匹配项的文件名。也 可用 --files-without-match 来指定。
+-n 在每个匹配行之前打印出其位于文件中的相应行号。也可用 --line-number 选项来指定。
+-h 应用于多文件搜索，不输出文件名。也可用 --no-filename 选项来指定。
+
+```sh
+# ^$.[]{}-?*+()|\
+grep -h '.zip' dirlist*.txt
+grep -h '^zip' dirlist*.txt
+grep -h '^[A-Z]' dirlist*.txt
+
+# 扩展 正则表达式
+echo "AAA" | grep -E 'AAA|BBB'
+grep -Eh '^(bz|gz|zip)' dirlist*.txt
+```
+
+POSIX 标准的字符集
+
+字符集	说明
+[:alnum:]	字母数字字符。在 ASCII 中，等价于:[A-Za-z0-9]
+[:word:]	与 [:alnum:] 相同, 但增加了下划线字符。
+[:alpha:]	字母字符。在 ASCII 中，等价于:[A-Za-z]
+[:blank:]	包含空格和 tab 字符。
+[:cntrl:]	ASCII 的控制码。包含了 0 到 31，和 127 的 ASCII 字符。
+[:digit:]	数字 0 到 9
+[:graph:]	可视字符。在 ASCII 中，它包含 33 到 126 的字符。
+[:lower:]	小写字母。
+[:punct:]	标点符号字符。在 ASCII 中，等价于:
+[:print:]	可打印的字符。在 [:graph:] 中的所有字符，再加上空格字 符。
+[:space:]	空白字符，包括空格，tab，回车，换行，vertical tab, 和 form feed. 在 ASCII 中，等价于:[ \t\r\n\v\f]
+[:upper:]	大写字母。
+[:xdigit:]	用来表示十六进制数字的字符。在 ASCII 中，等价于: [0-9A-Fa-f]
+
+{ } - 匹配一个元素特定的次数
+
+限定符 意思
+ n 匹配前面的元素，如果它确切地出现了 n 次。
+n,m 匹配前面的元素，如果它至少出现了 n 次，但是不多于 m 次。
+n, 匹配前面的元素，如果它出现了 n 次或多于 n 次。
+,m 匹配前面的元素，如果它出现的次数不多于 m 次。
+
+## 文本处理
+
+• cat –连接文件并且打印到标准输出 
+• sort –给文本行排序
+• uniq –报告或者省略重复行
+• cut –从每行中删除文本区域
+• paste –合并文件文本行
+• join –基于某个共享字段来联合两个文件的文本行 
+• comm –逐行比较两个有序的文件
+• diff –逐行比较文件
+• patch –给原始文件打补丁
+• tr –翻译或删除字符
+• sed –用于筛选和转换文本的流编辑器
+• aspell –交互式拼写检查器
+
+```sh
+# 显示特殊字符
+cat -A foo.txt
+# -n，给文本行添加行号；-s，禁止输出多个空白行。
+cat -ns foo.txt
+
+
+# 排序
+sort file1.txt file2.txt file3.txt > final_sorted_list.txt
+du -s /usr/share/* | sort -nr | head
+ls -l /usr/bin | sort -nr -k 5 | head
+# 对第一列排序 对第二列使用数值排序
+sort --key=1,1 --key=2n distros.txt
+# 对第三列，第七个字符开始，去掉开头空格，按数值逆序排序。之后...
+sort -k 3.7nbr -k 3.1nbr -k 3.4nbr distros.txt
+# 用 : 作为分隔符，以第七列排序
+sort -t ':' -k 7 /etc/passwd | head
+# 去除重复项
+sort -u xx.txt
+sort foo.txt | uniq
+
+# uniq 只能对有序文件去重
+```
+
+sort 程序有几个有趣的选项。这里只是一部分列表:
+
+选项 长选项	描述
+ -b --ignore-leading-blanks	默认情况下，对整行进行排序，从每行的第一 个字符开始。这个选项导致 sort 程序忽略每行 开头的空格，从第一个非空白字符开始排序。
+ -f --ignore-case	让排序不区分大小写。
+ -n --numeric-sort	基于字符串的长度来排序。使用此选项允许根 据数字值执行排序，而不是字母值。
+ -r --reverse	按相反顺序排序。结果按照降序排列，而不是 升序。
+ -k --key=field1[,field2]	对从 field1 到 field2 之间的字符排序，而不是 整个文本行。看下面的讨论。
+ -m --merge	把每个参数看作是一个预先排好序的文件。把 多个文件合并成一个排好序的文件，而没有执 行额外的排序。
+ -o --output=file	把排好序的输出结果发送到文件，而不是标准 输出。
+ -t --field-separator=char	定义域分隔字符。默认情况下，域由空格或制 表符分隔。
+         
+
+
+
+## 编译程序
+
+用高级语言编写的程序，经过另一个称为编译器的程序的处理，会转换成机器语言。
+一些编译器把高级指令翻译成汇编语言，然后使用一个汇编器完成翻译成机器语言的最后阶段。
+
+一个叫做链接器的程序用来在编译器的输出结果和要编译的程序所需的库之间建立连接。这个过程的最终结果是一个可执行程序文件，准备使用。
+
+有些程序比如 shell 脚本就不需要编译。它们直接执行。这些程序是用所谓的脚本或解释型语言编写的。一个解释器输入程序文件，读取并执行程序中包含的每一条指令。
+
+```sh
+# 构建程序
+# 这个 configure 程序是一个 shell 脚本，由源码树提供。它的工作是分析程序建立环境，如检查是否安装了必要的外部工具和组件。
+./configure
+# Makefile 是一个配置文件，指示 make 程序究竟如何构建程序。没有它，make 程序就不能运行。Makefile 是一个普通文本文件。
+make
+```
+
+## Shell 脚本
+
+Shell 有些独特，因为它不仅是一个功能强大的命令行接口, 也是一个脚本语言解释器。
+
+当没有指定可执行文件明确的路径名时，shell 会 自动地搜索某些目录，来查找此可执行文件。
+
+```sh
+# shebang (即#!符号) 被用来告诉操作系统将执行此脚本所用的解释器的名字
+#!/bin/bash
+# This is our first script.
+echo 'Hello World!'
+```
+
+对于脚本文件，有两个常见的权限设置;权限为 755 的脚本，则每个人都能执行，和权限 为 700 的脚本，只有文件所有者能够执行。注意为了能够执行脚本，脚本必须是可读的。
+
+为了能够运行此脚本，我们必须指定脚本文件明确的路径。
+
+```sh
+# 默认在以下目录搜索可执行脚本，脚本放在这些目录下，可以不指定明确路径
+echo $PATH
+# （.)命令是 source 命令的同义词，一个 shell 内部命令，用来读取一个指定的 shell 命令文件，并把它看作是从键盘中输入的一样
+. .bashrc
+```
+
+如果我们编写了一个脚本，系统中的每 个用户都可以使用它，那么这个脚本的传统位置是/usr/local/bin。
+
+在赋值过程中，变量名，等号和变量值之间必须没有空格
+
+```sh
+# 变量
+a=z
+b="a string"
+c="a string and $b"
+# Assign the string "z" to variable a.
+# Embedded spaces must be within quotes.
+# Other expansions such as variables can be
+# expanded into the assignment.
+d=$(ls -l foo.txt)
+e=$((5 * 7))
+f="\t\ta string\n"
+# Results of a command.
+# Arithmetic expansion.
+# Escape sequences such as tabs and newlines. be
+# expanded into the assignment.
+# 在同一行中对多个变量赋值
+a=5 b="a string"
+
+# 添加花括号，shell 不再把末尾的 1 解释为变量名的一部分
+mv $filename ${filename}1
+
+# 文本输出的一种方式
+command << token
+text
+token
+
+cat << _EOF_
+这里是文本，在这里，单引号和双引号会失去它们在 shell 中的特殊含义，会当成普通的符号。
+_EOF_
+
+cat <<- _EOF_
+	会忽略开头的tab
+	可以缩进
+_EOF_
+```
+
+
+## Shell 语法
+
+```sh
+# case
+case word in
+    [pattern [| pattern]...) commands ;;]...
+esac
+# 模式以一个“)”为终止符
+
+read -p "Enter selection [0-3] > "
+case $REPLY in
+    0)  echo "Program terminated."
+        exit
+        ;;
+    1)  echo "Hostname: $HOSTNAME"
+		uptime
+		;; 
+	2) df -h
+        ;;
+    *)  echo "Invalid entry" >&2
+		exit 1
+		;;
+esac
+
+
+read -p "enter word > "
+case $REPLY in
+    [[:alpha:]])        echo "is a single alphabetic character." ;;
+    [ABC][0-9])         echo "is A, B, or C followed by a digit." ;;
+    ???)                echo "is three characters long." ;;
+    *.txt)              echo "is a word ending in '.txt'" ;;
+    *)                  echo "is something else." ;;
+esac
+
+# 添加的“;;&”的语法允许 case 语句继续执行下一条测试，而不是简单地终止运行。
+
+
+# 位置参数
+# shell 提供了一个称为位置参数的变量集合，这个集合包含了命令行中所有独立的单词。这 些变量按照从 0 到 9 给予命名，超过9用{}来引用
+# $#，可以得到命令行参数个数的变量
+[me@linuxbox ~]$ ./posit-param a b c d
+$# = 4
+$0 = /home/me/bin/posit-param
+$1 = a
+$2 = b
+$3 = c
+$4 = d
+$5 =
+$6 =
+$7 =
+$8 =
+$9 =
+${10} =
+${55} =
+# 执行一次 shift 命令，就会导致所有的位置参数“向下移动一个位置”
+count=1
+while [[ $# -gt 0 ]]; do
+    echo "Argument $count = $1"
+    count=$((count + 1))
+    shift
+done
+
+# 引用所有参数，如 myParam "a" "a b c"
+# "$@" = ["a", "a b c"]
+# $@ = ["a", "a", "b", "c"]
+# "$*" = ["a a b c"]
+# $* = ["a", "a", "b", "c"]
+
+
+# for 循环
+for variable [in words]; do
+    commands
+done
+
+for i in A B C D; do echo $i; done
+for i in {A..D}; do echo $i; done
+for i in distros*.txt; do echo $i; done
+
+# 如果省略掉 for 命令的可选项 words 部分，for 命令会默认处理位置参数
+
+for (( expression1; expression2; expression3 )); do
+    commands
+done
+# 等价于
+(( expression1 ))
+while (( expression2 )); do
+commands
+    (( expression3 ))
+done
+```
+
+basename 命令清除一个路径名的开头部分，只留下一个文件的基本名称
+
+
+## 参数展开
+
+```sh
+# 基本参数（变量，位置参数
+$a # 等价于
+${a}
+$1
+${11}
+
+# 空变量
+# :- 后是默认值，parameter值为空时，使用默认值
+foo=
+${parameter:-word}
+echo ${foo:-"substitute value if unset"} # substitute value if unset
+# parameter值为空时，退出，word的内容输出到标准错误
+${parameter:?word}
+# 若 parameter 没有设置或为空，展开结果为空。若 parameter 不为空，展开结果是 word 的 值会替换掉 parameter 的值;然而，parameter 的值不会改变。
+${parameter:+word}
+foo=
+echo ${foo:+"substitute value if set"} # 结果是空
+foo=bar
+echo ${foo:+"substitute value if set"} # substitute value if set
+
+# 这种展开会返回以 prefix 开头的已有变量名
+${!prefix*}
+${!prefix@}
+
+echo ${!BASH*}
+# BASH BASH_ARGC BASH_ARGV BASH_COMMAND BASH_COMPLETION
+# BASH_COMPLETION_DIR BASH_LINENO BASH_SOURCE BASH_SUBSHELL
+# BASH_VERSINFO BASH_VERSION
+
+# 字符串展开
+# 字符串parameter的长度
+${#parameter}
+# 返回 parameter 从 offset 开始到结尾的子串。若 offset 的值为负数，则认为 offset 值是从字符串的末尾开始算起
+${parameter:offset}
+# 返回 parameter 从 offset 开始， length 长度的子串
+${parameter:offset:length}
+# 位置参数，从offset开始，length个位置参数
+${@:offset:length}
+
+[me@linuxbox ~]$ foo="This string is long."
+[me@linuxbox ~]$ echo ${foo:5}
+string is long.
+[me@linuxbox ~]$ echo ${foo:5:6}
+string
+[me@linuxbox ~]$ echo ${foo: -5}
+long.
+[me@linuxbox ~]$ echo ${foo: -5:2}
+lo
+
+# 从 paramter 所包含的字符串中清除开头一部分文本，# 形式清除最短的匹配结果，而该 ## 模式清除最长的匹配结果。
+${parameter#pattern}
+${parameter##pattern}
+
+[me@linuxbox ~]$ foo=file.txt.zip
+[me@linuxbox ~]$ echo ${foo#*.}
+txt.zip
+[me@linuxbox ~]$ echo ${foo##*.}
+zip
+
+# 从末尾开始，从 paramter 所包含的字符串中清除末尾一部分文本
+${parameter%pattern}
+${parameter%%pattern}
+
+# 查找和替换。/string 可能会省略掉，这样会导致删除匹配的文本
+${parameter/pattern/string}  # 找到的第一个被替换
+${parameter//pattern/string} # 所有被替换
+${parameter/#pattern/string} # 要求匹配项出现在开头
+${parameter/%pattern/string} # 要求匹配项出现在末尾
+
+[me@linuxbox~]$ foo=JPG.JPG
+[me@linuxbox ~]$ echo ${foo/JPG/jpg}
+jpg.JPG
+[me@linuxbox~]$ echo ${foo//JPG/jpg}
+jpg.jpg
+[me@linuxbox~]$ echo ${foo/#JPG/jpg}
+jpg.JPG
+[me@linuxbox~]$ echo ${foo/%JPG/jpg}
+JPG.jpg
+
+# declare 命令可以用来把字符串规范成大写或小写字符
+declare -u upper
+declare -l lower
+if [[ $1 ]]; then
+    upper="$1"
+    lower="$1"
+    echo $upper
+    echo $lower
+fi
+
+# 有四个参数展开，可以执行大小写转换操作:
+# 格式 结果
+# \${parameter„} 把 parameter 的值全部展开成小写字母。 
+# \${parameter,} 仅仅把 parameter 的第一个字符展开成小写字母。
+# \${parameterˆˆ} 把 parameter 的值全部转换成大写字母。
+# \${parameterˆ} 仅仅把 parameter 的第一个字符转换成大写字母(首字母 大写)。
+
+if [[ $1 ]]; then
+    echo ${1,,}
+    echo ${1,}
+    echo ${1^^}
+    echo ${1^}
+fi
+
+# 算术求值和展开
+$((expression))
+
+# 数基
+# shell 支持任意进制的整形常量。
+# 表示法  描述
+# number  默认情况下，没有任何表示法的数字被看做是十进制数(以 10 为底)。
+# 0number  在算术表达式中，以零开头的数字被认为是八进制数。
+# 0xnumber  十六进制表示法
+# base#number  number 以 base 为底
+[me@linuxbox ~]$ echo $((0xff))
+255
+[me@linuxbox ~]$ echo $((2#11111111))
+255
+# 当表达式用于逻辑运算时，表达式遵循算术逻辑规则;也就是，表达式的计算结果是零， 则认为假，而非零表达式认为真
+```
+
+## 数组
+
+```sh
+# 创建数组
+a[1]=foo # 赋值
+echo ${a[1]}  # foo
+# 创建数组
+declare -a a
+
+# 赋值
+arrayName=(value1 value2 ...)
+days=([0]=Sun [1]=Mon [2]=Tue [3]=Wed [4]=Thu [5]=Fri [6]=Sat)
+[me@linuxbox~]$ foo=(a b c d e f)
+[me@linuxbox~]$ foo=A 
+[me@linuxbox~]$ echo ${foo[@]} # Abcdef
+
+# 输出
+[me@linuxbox ~]$ animals=("a dog" "a cat" "a fish")
+[me@linuxbox ~]$ for i in ${animals[*]}; do echo $i; done
+a
+dog
+a
+cat
+a
+fish
+[me@linuxbox ~]$ for i in ${animals[@]}; do echo $i; done
+a
+dog
+a
+cat
+a
+fish
+[me@linuxbox ~]$ for i in "${animals[*]}"; do echo $i; done
+a dog a cat a fish
+[me@linuxbox ~]$ for i in "${animals[@]}"; do echo $i; done
+a dog
+a cat
+a fish
+
+# 长度
+[me@linuxbox ~]$ a[100]=foo
+[me@linuxbox ~]$ echo ${#a[@]} # number of array elements
+1
+[me@linuxbox ~]$ echo ${#a[100]} # length of element 100
+3
+
+# 下标
+${!array[*]}
+${!array[@]}
+[me@linuxbox ~]$ foo=([2]=a [4]=b [6]=c)
+[me@linuxbox ~]$ for i in "${foo[@]}"; do echo $i; done
+a
+b
+c
+[me@linuxbox ~]$ for i in "${!foo[@]}"; do echo $i; done
+2
+4
+6
+
+# 追加
+foo=(a b c)
+foo+=(d e f)
+echo ${foo[@]} # abcdef
+
+# 排序
+a_sorted=($(for i in "${a[@]}"; do echo $i; done | sort))
+
+# 删除数组
+unset foo
+unset 'foo[2]'
+
+# 关联数组（有点像map）
+declare -A colors
+colors["red"]="#ff0000"
+colors["green"]="#00ff00"
+colors["blue"]="#0000ff"
+# 访问元素
+echo ${colors["blue"]}
+```
+
+## 不常用命令
+
+```sh
+# 组命令:
+{ command1; command2; [command3; . . . ] }
+# 子 shell:
+(command1; command2; [command3;. . . ])
+
+{ ls -l; echo "Listing of foo.txt"; cat foo.txt; } > output.txt
+(ls -l; echo "Listing of foo.txt"; cat foo.txt) > output.txt
+
+{ ls -l; echo "Listing of foo.txt"; cat foo.txt; } | lpr
+```
+
+
+
+
+```sh
+ip addr # 查看虚拟机ip地址，一般10开头的是外网地址，192开头的是内网地址。
+ip a # 缩写
+
+ps -aux # 查看启动的进程
+
+```
+
+
 
 
 
@@ -1222,4 +2152,4 @@ Ctrl+z是将任务中止（暂停的意思）。
 Ctrl+d 不是发送信号，而是表示一个特殊的二进制值，表示 EOF
 
 
-[CentOS7.5升级gcc到8.3.0版本](https://www.cnblogs.com/NanZhiHan/p/11010130.html)
+[CentOS7.5升级gcc到8.3.0版本](https://www.cnblogs.com/NanZhiHan/p/11010130.html)|

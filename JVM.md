@@ -9,7 +9,13 @@
 
 ## 走近Java
 
+虚拟机：
 
+- Sun Classic
+- Exact VM：可以知道内存中的数据含义，如一个32bit内存中的数据，是地址，还是整数
+- HotSpot VM：准确式内存、热点代码探测
+- J9：IBM的
+- Dalvik：Android平台早期虚拟机
 
 编译jdk的实验
 
