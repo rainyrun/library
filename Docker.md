@@ -175,6 +175,22 @@ ADD software.lic(当前目录) /opt/application/software.lic(镜像中的目录)
 COPY conf.d/ /etc/apache2/
 ```
 
+## Docker 内部连网
+
+在安装Docker时，会创建一个新的网络接口，名字是Docker0。每个Docker容器都会在这个接口上分配一个ip地址。
+
+接口 docker0 是一个虚拟的以太网桥。Docker 每创建一个容器，就会创建一组互联的网络接口。这组接口其中一端作为容器的eth0接口，另一端统一命名为类似vethec6a，作为宿主机的一个端口。通过把每个 `veth*` 接口帮到docker0网桥，Docker创建了一个虚拟子网，子网内有宿主机和所有Docker容器。
+
+```sh
+# 在宿主机上执行，可以看到docker容器的网关ip
+ip a show docker0
+# 在容器上执行，可以看到容器的ip
+ip a show eth0
+traceroute google.com # 查看途径的路由器，可以看到网关ip是宿主机上查的ip
+
+# Docker 的 iptables 和 NAT 配置
+iptables -t nat -L -n
+```
 
 
 
