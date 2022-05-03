@@ -89,10 +89,10 @@ Tomcat部署Java Web应用程序有两种方式：静态部署和动态部署。
 
    在文件里写入
 
-   ```xml
-   <?xml version="1.0" encoding="utf-8"?>
-   <context docBase="" path="/person"></Context>
-   ```
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<context docBase="" path="/person"></Context>
+```
 
    在浏览器上访问
    http://localhost/8080/person/person.xml
@@ -246,8 +246,11 @@ You are not authorized to view this page.
 
 这个上下文文件只有一行代码：
 
+```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Context docBase="d:/Demo1" reloadable="true"></Context>
+```
+
 这里的docBase是必须的属性，它定义了应用程序的位置。reloadable属性是可选的，如果存在并且值为true，那么一旦程序中Java类文件或者是其他资源文件有任何添加，减少或者是更新，TOmcat都可以检测到，并且重新加载该应用程序
 
 当把上下文文件添加到Tomcat的指定目录下，Tomcat就会自动加载应用程序。当删除这个文件时，Tomcat就会自动卸载应用程序
@@ -255,11 +258,12 @@ You are not authorized to view this page.
 方式二
 在conf/server.xml文件中的Host标签下添加一个Context元素
 
+```xml
 <Host appBase="webapps" autoDeploy="true" name="localhost" unpackWARs="true">
-      
-      <Context path="/Demo2" docBase="d:/Demo1" reloadable="true"></Context>
-
+    <Context path="/Demo2" docBase="d:/Demo1" reloadable="true"></Context>
 </Host>
+```
+
 以第一种方式不同之处在于此处定义上下文需要给上下文路径定义path属性，这个path属性的值表示需要访问的项目名，访问的URL就为：http://localhost:8080/Demo2
 
 一般来说，不建议通过server.xml来管理上下文，因为修改后只有重启Tomcat后，配置才能生效。不过，如果有多个应用程序需要测试，使用这种方式或许更为方便，因为可以在一个文件中同时管理所有的应用程序
@@ -268,7 +272,7 @@ You are not authorized to view this page.
 方式三
 隐式部署真是太方便了，非常建议使用这种方式部署项目。通过将一个war文件或者整个应用程序复制到Tomcat的webapps(Tomcat默认的部署项目位置，可以在server.xml文件中修改，但不建议修改)目录下，启动服务器就可以了
 
-**将应用部署到Tomcat根目录的三种方法
+** 将应用部署到Tomcat根目录的三种方法
 将应用部署到Tomcat根目录的目的是可以通过“http://[ip]:[port]”直接访问应用，而不是使用“http://[ip]:[port]/[appName]”上下文路径进行访问。
 
 方法一：（最简单直接的方法）
@@ -293,9 +297,12 @@ You are not authorized to view this page.
 方法三：
 与方法二类似，但不是修改全局配置文件“conf/server.xml，而是在“conf/Catalina/localhost”目录下增加新的文件”ROOT.xml”（注意大小写），文件内容如下：
 
+```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Context path="" docBase="C:/apache-tomcat-6.0.32/myapps/bc.war" reloadable="true">
 </Context>
+```
+
 注意：
 
 Tomcat5.0以下版本在d:/Tomcat/conf/Catalina/localhost目录下会自动生成了一个ROOT.xml文件，但是5.0以上版本已不再生成此文件。
@@ -304,10 +311,10 @@ Tomcat5.0以下版本在d:/Tomcat/conf/Catalina/localhost目录下会自动生�
 
 另外一个
 
-在conf/server.xm的<Host></Host>区域的末尾添加
-
+```xml
+<!-- 在conf/server.xm的<Host></Host>区域的末尾添加 -->
 <Context path="" docBase="/home/apache-tomcat-8.5.35/webapps/myproject" debug="0" reloadable="true"/>
-
+```
 
 
 该监听端口
@@ -340,4 +347,47 @@ JAVA_OPTS="$JAVA_OPTS -server -XX:PermSize=64M -XX:MaxPermSize=256m"
 其中 JAVA_OPTS='-Xms512m -Xmx1024m' 是设置Tomcat使用的内存的大小.
 -XX:PermSize=64M -XX:MaxPermSize=256m 指定类空间(用于加载类)的内存大小 
 ```
+
+# How Tomcat Works
+
+tomcat 有2个主要模块
+
+- 连接器：获取并解析http请求
+- 容器：调用Servlet的方法，处理请求
+
+## 一个简单的Web服务器
+
+用Socket监听8888端口，只会返回OK。在浏览器上输入 127.0.0.1:8888/xxx 任意路径，都能被该程序监听到。
+
+```java
+public class HttpServer {
+    public static void main(String[] args) throws IOException {
+        ServerSocket serverSocket = new ServerSocket(8888, 1, Inet4Address.getByName("127.0.0.1"));
+        while (true) {
+            Socket socket = serverSocket.accept();
+            // http请求的内容
+            InputStream inputStream = socket.getInputStream();
+            // http请求的响应
+            OutputStream outputStream = socket.getOutputStream();
+            outputStream.write("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 4\r\n\r\n<h1>Hello</h1>".getBytes());
+        }
+    }
+}
+```
+
+## 简单的 Servlet 容器
+
+servlet 容器会为 servlet 的每个 HTTP 请求做下面一些工作:
+
+1. 当第一次调用 servlet 的时候，加载该 servlet 类并调用 servlet 的 init 方法(仅仅一次)。
+2. 对每次请求，构造一个 javax.servlet.ServletRequest 实例和一个 javax.servlet.ServletResponse 实例。
+3. 调用 servlet 的 service 方法，同时传递 ServletRequest 和 ServletResponse 对象。
+4. 当 servlet 类被关闭的时候，调用 servlet 的 destroy 方法并卸载 servlet 类。
+
+
+## 参考书籍
+
+《How Tomcat Works》
+
+
 

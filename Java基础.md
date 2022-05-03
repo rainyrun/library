@@ -1553,7 +1553,7 @@ class MyClass implements Rainy{
 
 ## 异常
 
-异常处理的任务就是将控制权从错误产生的地方转移给能够处理这种情况的错误处理器。
+异常处理的任务就是将控制权从错误产生的地方，转移给能够处理这种情况的错误处理器。
 
 当方法发生错误时，抛出(throw)一个封装了错误信息的对象，此时方法会立即退出且不返回任何值。
 
@@ -1580,12 +1580,6 @@ Java语言规范将派生于 Error类 或 RuntimeException 类的所有异常称
 2. 不受检查的异常：在方法的声明中没有声明，但在方法的运行过程中发生的各种异常被称为"不被检查的异常"。这种异常是错误，会被自动捕获。
 
 Exception是所有被检查异常的基类，然而，RuntimeException是所有不受检查异常的基类。
-
-Java中所有异常或者错误都继承Throwable，我们把它分为三类：
-
-- Error: 所有都继承自Error，表示致命的错误，比如内存不够，字节码不合法等。
-- Exception: 这个属于应用程序级别的异常，这类异常必须捕捉。
-- RuntimeException: RuntimeException继承了Exception，而不是直接继Error,这个表示系统异常，比较严重。
 
 ```java
 Class MyAnimation{
@@ -3611,18 +3605,26 @@ Path 表示的是一个目录名序列
 // 创建路径
 Path absolute = Paths.get("/home", "harry"); // 路径是 /home/harry
 Path relative = Paths.get("myprog", "conf", "user.properties"); // 路径是 myprog/conf/user.properties
-// resolve 连接路径
+
+// resolve 连接路径 
 Path workRelative = Paths.get("work");
-Path workPath = basePath.resolve(workRelative); // 路径是 basePath/workRelative。如果workRelative是绝对路径，则最终路径是workRelative。
-Path workPath = basePath.resolve("work"); // 效果同上
-Path tempPath = workPath.resolveSibling("temp"); // workPath=/opt/myapp/work, tempPath=/opt/myapp/temp
+// basePath = /home(绝对路径） workPath = /home/work
+Path workPath = basePath.resolve(workRelative);
+// basePath = home(相对路径） workPath = work
+Path workPath = basePath.resolve(workRelative);
+
+// workPath=/opt/myapp/work, tempPath=/opt/myapp/temp
+Path tempPath = workPath.resolveSibling("temp"); 
+
 // relativize 获得相对路径
 Path p1 = Paths.get("/home/cay");
 Path p2 = Paths.get("/home/fred/myprog");
 Path result = p1.relativize(p2); // result=../fred/myprog
+
 // normalize 移除冗余的.和..
 Path p = Paths.get("/home/cay../fred/./myprog");
 Path normalize = p.normalize(); // normalize=/home/fred/myprog
+
 // toAbsolutePath 返回给定路径的绝对路径
 Path absolutePath = p.toAbsolutePath();
 // 断开路径
@@ -3639,7 +3641,7 @@ Files 类
 ```java
 // 读取文件内容
 byte[] bytes = Files.readAllBytes(path);
-String content = new String(bytes, charset); // 读入到字符串
+String content = new String(bytes, StandardCharsets.UTF_8); // 读入到字符串
 List<String> lines = Files.readAllLines(path, charset); // 读入行到列表中
 // 写入文件
 Files.write(path, content.getBytes(charset), StandardOpenOption.APPEND); // 写入字符串
@@ -3655,7 +3657,7 @@ Files.createDirectories(path); // 可以创建路径中的中间目录
 Files.createFile(path); // 创建空文件。文件已存在会抛异常
 // 复制文件
 Files.copy(fromPath, toPath);
-Files.copy(fromPath, toPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES); // 文件存在则覆盖，拷贝所有文件属性。
+Files.copy(fromPath, toPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES); // StandardCopyOption.REPLACE_EXISTING 文件存在则覆盖 StandardCopyOption.COPY_ATTRIBUTES 拷贝所有文件属性。
 // 移动文件
 Files.move(fromPath, toPath);
 Files.move(fromPath, toPath, StandardCopyOption.ATOMIC_MOVE); // 原子性的移动文件，要么成功，要么不移动。
@@ -3666,7 +3668,7 @@ boolean deleted = Files.deleteIfExists(path);
 long fileSize = Files.size(path); // 文件字节数
 BasicFileAttributes attributes = Files.readAttributes(path, BasicFileAttributes.class);
 PosixFileAttributes attributes = Files.readAttributes(path, PosixFileAttributes.class);
-// 访问目录中的项
+// 访问目录中的项 目录惰性读取
 try(Stream<Path> entries = Files.list(pathToDirectory)){ ... } // 不会处理子目录
 try(Stream<Path> entries = Files.walk(pathToRoot)){ ... } // 处理子目录，以深度优先顺序访问
 // 复制目录
@@ -3686,7 +3688,20 @@ try(DirectoryStream<Path> entries = Files.newDirectoryStream(dir, "*.java")){
     for(Path entry : entries)
         // process entry
 }
-walkFileTree
+// walkFileTree 遍历子目录
+Files.walkFileTree(Paths.get("/"), new SimpleFileVisitor<Path>(){
+    public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes attrs) {
+        System.out.println(path);
+        return FileVisitResult.CONTINUE;
+    }
+    public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+        return FileVisitResult.CONTINUE;
+    }
+    public FileVisitResult visitFileFailed(Path path, IOException exc) {
+        System.out.println(path);
+        return FileVisitResult.SKIP_SUBTREE;
+    }
+});
 ```
 
 ![Glob模式](images/Java/Glob模式.png)

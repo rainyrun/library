@@ -1,12 +1,142 @@
 # Spring
 
-框架是一些接口和类的集合。
+## 概览
 
-Spring的根本使命：简化java开发
+Spring的根本使命：简化java开发。
 
-JavaBean表示一个应用组件
+为此，Spring采取了以下4种关键策略:
 
-需要依赖log4j
+- 基于POJO的轻量级和最小侵入性编程;
+- 通过依赖注入和面向接口实现松耦合;
+- 基于切面和惯例进行声明式编程;
+- 通过切面和模板减少样板式代码。
+
+依赖注入
+
+依赖注入的2种方式
+
+- XML
+- Java配置
+
+需要被注入对象的类
+
+```java
+public class BraveKnight implements Knight {
+	private Quest quest;
+
+    // Quest 需要被注入进来
+	public BraveKnight(Quest quest) {
+		this.quest = quest;
+	}
+	public void embarkOnQuest() {
+		quest.embark();
+	}
+}
+```
+
+```xml
+<beans>
+	<bean id="knight" class="BraveKnight">
+		<!-- 注入Quest bean -->
+		<constructor-arg ref="quest" />
+	</bean>
+	<bean id="quest" class="SlayDragonQuest">
+		<constructor-arg value="#{T(System).out}" />
+	</bean>
+</beans>
+<!-- 使用 ClassPathXmlApplicationContext 作为应用上下文 -->
+```
+
+```java
+@Configuration
+public class KnightConfig {
+	@Bean
+	public Knight knight() {
+		return new BraveKnight(quest()); // 注入 Quest 对象
+	}
+	@Bean
+	public Quest quest() {
+		return new SlayDragonQuest(System.out);
+	}
+}
+```
+
+Spring 通过应用上下文(Application Context) 装载bean的定义，并把它们组装起来。Spring 自带了多种应用上下文的实现，它们之间的区别在于如何加载配置。
+
+```java
+public calss KnightMain {
+	public static void main(String[] args) {
+		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("META-INF/spring/knights.xml");
+		Knight knight = context.getBean(Knight.class);
+		knight.embarkOnQuest();
+		context.close();
+	}
+}
+```
+
+基于切面进行声明式编程
+
+```java
+// 吟游诗人
+public class Minstrel {
+	private PrintStream stream;
+	public Minstrel(PrintStream stream) {
+		this.stream = stream;
+	}
+	public void singBeforeQuest() {
+		stream.println("Fa la la, the knight is so brave!");
+	}
+	public void singAfterQuest() {
+		stream.println("Tee hee hee, the knight did embark on a quest!");
+	}
+}
+```
+
+将 Minstrel 声明为一个切面
+
+```xml
+<beans>
+	<bean id="minstrel" class="Minstrel">
+		<constructor-arg value="#{T(System).out}" />
+	</bean>
+	<aop:config>
+		<!-- 声明 Minstrel 为一个切面 -->
+		<aop:aspect ref="minstrel">
+			<!-- 定义切点 expression是AspectJ的切点表达式语言-->
+			<aop:pointcut id="embark" expression="execution(* *.embarkOnQuest(..))" />
+			<!-- 声明前置通知 -->
+			<aop:before pointcut-ref="embark" method="singBeforeQuest" />
+			<!-- 声明后置通知 -->
+			<aop:after pointcut-ref="embark" method="singAfterQuest" />
+		</aop:aspect>
+	</aop:config>
+</beans>
+```
+
+使用模板消除样式代码
+
+
+### Spring 容器
+
+spring 容器负责创建对象，装配它们，配置它们并管理它们的整个生命周期。
+
+Spring自带了多个容器实现，可以归为两种不同的类型。
+
+- bean工厂(由org.springframework.beans.factory.BeanFactory接口定义)：是最简单的容器，提供基本的DI支持。
+- 应用上下文 (由org.springframework.context.ApplicationContext接口定义)：基于BeanFactory构建，并提供应用框架级别的服务，例如从 属性文件解析文本信息以及发布应用事件给感兴趣的事件监听者。
+	1. AnnotationConfigApplicationContext: 从一个或多个基于Java的配置类中加载Spring应用上下文。
+	2. AnnotationConfigWebApplicationContext: 从一个或多个基于Java的配置类中加载Spring Web应用上下文。
+	3. ClassPathXmlApplicationContext: 从类路径下的一个或多个XML配置文件中加载上下文定义，把应用上下文的定义文件作为类资源。
+	4. FileSystemXmlapplicationcontext: 从文件系统下的一个或多个XML配置文件中加载上下文定义。
+	5. XmlWebApplicationContext: 从Web应用下的一个或多个XML配置文件中加载上下文定义。
+
+bean 的生命周期
+
+![spring容器中bean的生命周期](images/spring/spring容器中bean的生命周期.png)
+
+![spring框架的模块](images/spring/spring框架的模块.png)
+
+
 
 ## 设计理念
 
@@ -36,8 +166,107 @@ ApplicationContext是Context的顶级父类
 
 Core 组件
 
+## 装配 Bean
 
+装配Bean的3种方式
 
+- 在XML中进行显式配置。
+- 在Java中进行显式配置。
+- 隐式的bean发现机制和自动装配。
+
+### 自动装配
+
+Spring从两个角度来实现自动化装配:
+
+- 组件扫描(component scanning): Spring会自动发现应用上下文中所创建的bean。
+- 自动装配(autowiring): Spring自动满足bean之间的依赖。 
+
+```java
+public interface CompactDisc {
+	void play();
+}
+
+// 告知Spring要为这个类创建bean
+@Component
+@Component("longlyHeartsClub") // 指定Bean的id
+public class sgtPeppers implements CompactDisc {
+	public void play() {
+		System.out.println("Playing sgtPeppers.");
+	}
+}
+
+// 通过Java代码定义了Spring的装配规则
+@Configuration
+// 组件扫描默认是不启用的。命令它去寻找带有@Component注解的类，并为其创建bean。默认会扫描与配置类相同的包及子包。
+@ComponentScan
+@ComponentScan("com.spring") // 扫描指定包
+@ComponentScan(basePackages={"com.spring", "video"}) // 扫描指定包
+@ComponentScan(basePackageClasses={CDPlayer.class, DVDPlayer.class}) // 扫描指定类或接口
+public class CDPlayerConfig {
+}
+```
+
+单元测试
+
+```java
+// 在测试开始的时候自动创建Spring的应用上下文
+@RunWith(SpringJUnit4ClassRunner.class)
+// 告知需要在CDPlayerConfig中加载配置
+@ContextConfiguration(classes=CDPlayerConfig.class)
+public class CDPlayerTest {
+	// 自动注入Bean
+	@Autowired
+	private CompactDisc cd;
+
+	@Test
+	public void cdShouldNotBeNull() {
+		assertNotNull(cd);
+	}
+}
+```
+
+应用上下文中所有的bean都会给定一个ID，默认将类名的第一个字母变为小写后成为ID。
+
+### Java代码装配
+
+```java
+// 表明这个类是一个配置类
+@Configuration
+public class CDPlayerConfig {
+	// 告诉Spring这个方法将会返回一个对象，该对象要注册为Spring应用上下文中的bean。bean的ID与带有@Bean注解的方法名是一样的
+	@Bean
+	@Bean(name="longlyHeartsClub") // 设置bean的id
+	public CompactDisc sgtPeppers() {
+		return new sgtPeppers();
+	}
+
+	@Bean
+	public CDPlayer cdPlayer() {
+		// 引用创建bean的方法
+		// sgtPeppers()方法上添加了@Bean注解，Spring 将会拦截所有对它的调用，并确保直接返回该方法所创建的bean，而不是每次都对其进行实际的调用。
+		return new CDPlayer(sgtPeppers());
+	}
+	// 第二种注入依赖bean的方式
+	@Bean
+	public CDPlayer cdPlayer(CompactDisc compactDisc) {
+		return new CDPlayer(compactDisc);
+	}
+}
+```
+
+默认情况下，Spring中的bean都是单例的
+
+### XML 装配
+
+```xml
+<beans>
+	<context:component-scan base-package="org.spring21"/>
+	<!-- bean的id是 “soundsystem.SgtPeppers#0”。 -->
+	<bean class="soundsystem.SgtPeppers" />
+	<!-- 指定bean的id -->
+	<bean id="compactDisc" class="soundsystem.SgtPeppers" />
+</beans>
+```
 
 ## 依赖注入(DI)
 
@@ -163,7 +392,9 @@ import javax.inject.Named;
 
 - 域（Filed）（即，属性（Property））
 - 构造方法定义
-- 方法定义。适用于任何方法，不限于setter方法
+- 方法定义。适用于任何方法，不限于setter方法。
+
+假如有且只有一个bean匹配依赖需求的话，那么这个bean将会被装配进来。如果没有匹配的bean，那么在应用上下文创建的时候，Spring会抛出一个异常。如果有多个bean都能满足依赖关系的话，Spring将会抛出一个异常，表明没有明确指定要选择哪个bean进行自动装配。
 
 `@Autowired(required=false)`：Spring会尝试自动装配，如果没有匹配的bean，会让这个bean处在未装配状态。
 
