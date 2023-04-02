@@ -1909,13 +1909,20 @@ jhat dumpFileName
 
 10. 如果使用 -Xprof 标志运行 Java 虚拟机，就会运行一个基本的剖析器来跟踪那些代码中经常被调用的方法剖析信息将发送给 System.out
 
-## 泛型程序设计（重看）
+## 泛型程序设计
 
-泛型程序设计(Generic programming)意味着编写的代码可以被很多不同类型的对象所重用。
+目标：泛型程序设计(Generic programming)意味着编写的代码可以被很多不同类型的对象所重用。比如 ArrayList 可以放 String 类型，也可以放 File 类型，而不用分别给2个类写个 ArrsyList。
+
+类型参数
+
+```java
+// String 是类型参数，编译器可以知道数组里放的是什么类型的对象。
+ArrayList<String> files = new ArrayList<>();
+```
 
 简单泛型类
 
-一个泛型类就是具有一个或多个类型变量的类。泛型类可看作普通类的工厂。
+定义：具有一个或多个类型变量的类。泛型类可看作普通类的工厂。
 
 ```java
 public class Pair<T>{
@@ -1958,7 +1965,7 @@ String middle = ArrayAlg.getMiddle("]ohn", "Q.", "Public");
 // T 只能为实现了 Comparable 的类型
 public static <T extends Comparable> T min(T[] a){}
 // 可以限定多个接口，只能限定一个类（位置在第一个）
-T extends Comparable & Serializable
+public static <T extends Comparable & Serializable> T min(T[] a){}
 ```
 
 类型擦除
@@ -1968,9 +1975,109 @@ T extends Comparable & Serializable
 原始类型的生成规则
 
 1. 去掉类名后的 `<T extends A & B>`
-2. 将类中的所有T替换成A，将类的定义变为 `类名 implements B`。T没有限定的话，将所有的T替换成Object
+2. 将类中的所有T替换成A，将类的定义变为 `类名 implements A`。T没有限定的话，将所有的T替换成Object
 
-虚拟机中的对象总有一个特定的非泛型类型。因此，所有的类型查询只产生原始类型。
+编译器会在字节码中，将返回后的值进行强制类型转换。
+
+方法擦除带来的问题
+
+```java
+public class Test extends Pair<LocalDate> {
+    public Test(LocalDate first, LocalDate second) {
+        super(first, second);
+    }
+
+    @Override
+    public void setFirst(LocalDate first) {
+        System.out.println("Test: set first");
+        super.setFirst(first);
+    }
+
+    @Override
+    public void setSecond(LocalDate second) {
+        super.setSecond(second);
+    }
+
+    public static void main(String[] args) {
+        Test interval = new Test(LocalDate.now(), LocalDate.of(1992, 7, 13));
+        Pair<LocalDate> pair = interval;
+        // 调用的方法是 setSecond(Object)，因为类型擦除后，Test 中的 setSecond(LocalDate) 和 Pair 类中的不是同一个方法描述符了，所以 Test 被编译成 class 文件时，还会生成一个 setSecond(Object) 的桥接方法，调用了 setSecond(LocalDate)
+        pair.setSecond(LocalDate.of(1991, 7, 13));
+    }
+}
+
+
+class Pair<T> {
+    private T first;
+    private T second;
+    public Pair(T first, T second) {
+        this.first = first;
+        this.second = second;
+    }
+    public void setFirst(T first) {
+        this.first = first;
+    }
+
+    public T getFirst() {
+        return first;
+    }
+
+    public T getSecond() {
+        return second;
+    }
+
+    public void setSecond(T second) {
+        this.second = second;
+    }
+}
+// 类型擦除后的 Pair
+class Pair {
+    private Object first;
+    private Object second;
+    public Pair(Object first, Object second) {
+        this.first = first;
+        this.second = second;
+    }
+    public void setFirst(Object first) {
+        this.first = first;
+    }
+
+    public Object getFirst() {
+        return first;
+    }
+
+    public Object getSecond() {
+        return second;
+    }
+
+    public void setSecond(Object second) {
+        this.second = second;
+    }
+}
+
+// Test.class 片段，编译器生成的桥接方法
+ public void setSecond(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)V
+    flags: (0x1041) ACC_PUBLIC, ACC_BRIDGE, ACC_SYNTHETIC
+    Code:
+      stack=2, locals=2, args_size=2
+         0: aload_0
+         1: aload_1
+         2: checkcast     #11                 // class java/time/LocalDate
+         5: invokevirtual #12                 // Method setSecond:(Ljava/time/LocalDate;)V
+         8: return
+      LineNumberTable:
+        line 5: 0
+```
+
+Java泛型转换的事实
+
+- 虚拟机中没有泛型，只有普通的类和方法。
+- 所有的类型参数都用它们的限定类型替换。
+- 桥方法被合成来保持多态。
+- 为保持类型安全性，必要时插入强制类型转换
+
+约束和局限性
 
 ```java
 if (a instanceof Pair<T>) // Error
@@ -1982,9 +2089,10 @@ if (stringPair.getClass() == employeePair.getClass()) // 相等，getClass()返�
 // 不能这样使用类型变量：new T(...)、new T[...] 或 T.class
 Pair<String>[] table; // ok，可以声明数组
 table = new Pair<String>[10] ; // Error，不能创建数组（类型擦除会使得一个数组里存放不同类型的数据）
+
 Pair<String>[] table = (Pair<String>[]) new Pair<?>[10]; // ok，但不安全
-    Object[] objarray = table;
-    objarray[0] = new Pair<Double>(); // ！table里存在了Pair<Double>类型的对象
+Object[] objarray = table;
+objarray[0] = new Pair<Double>(); // ！table里存在了Pair<Double>类型的对象。rainy: 类型擦除后，数组里只能放Pair类型，但Pair里的是String还是Double，数组检测不出来。
 ArrayList<Pair<String>>; // ok
 
 // 抑制警告
@@ -3900,6 +4008,29 @@ public static void map(String[] args) {
 }
 ```
 
+同一个 channel 的 select 不能被并发的调用。
+
+NIO的特点：如果 TCP RecvBuffer 有数据，就把数据从网卡读到内存，并且返回给用户；反之直接返回0，永远不会阻塞。
+
+问：读场景，没有数据直接返回0，读的数据不完整怎么办？写场景，如果没有写入的空间，就直接返回写结束吗？使用数据的线程如何知道已经读完了，可以处理数据了？
+
+答：一个线程处理多个连接，一个连接没有数据可读，就将它注册到Selector上，并切换到其他连接进行读写。使用数据的线程，需要告诉 Selector 它想要这个数据，当数据读完时，Selector 会告知该线程。（rainy：那读数据的线程，本质上也是阻塞的吧？只是在有多个连接的时候，平均的阻塞时间变短了）
+
+NIO的主要事件有：读就写、写就绪、有新连接到来。
+
+传统的同步阻塞I/O处理（BIO，blocking I/O）
+
+rainy: io是计算机系统向外设读或者写，因为外设的输入和输出比较慢，所以需要等待。在向外设输入的时候，CPU没有工作的吗？比如外设从缓存里依次读取数据，此时CPU已经把数据写到缓存了，就等着外设去读完了。等外设读完，这个流才结束吗？所以io其实是2个设备进行数据交换，因为读写速度不匹配，导致一方需要等待另一方。关于阻塞，阻塞的时候cpu没有工作吗？不需要定时轮询来看阻塞是否结束吗？答：还有一种通知机制，比如当缓存被读完的时候，就通知可以输入了，这种是触发式的，需要双方协商好怎么通知，此时在通知前，cpu也是不工作的。当一个线程被阻塞时，可以让另一个线程使用cpu资源。
+
+使用线程池来高效利用cpu资源。缺点（JVM使用的是内核线程）
+
+- 线程的创建和销毁成本高
+- 线程占用内存大
+- 线程切换成本高，需要保留线程上下文，执行系统调用
+- 当线程数量多，但外部网络不稳定时，容易造成大量线程同时激活，从而造成系统压力过大。
+
+
+
 ## 正则表达式
 
 正则表达式(regular expression)用于指定字符串的模式，用于定位匹配某种特定模式的字符串。
@@ -4775,6 +4906,107 @@ URLClassLoader
 ```java
 // 获取当前的 classpath 路径
 this.getClass().getClassLoader.getResource("").toString()
+```
+
+## 本地方法
+
+本地代码：使用其他语言的代码，和平台相关
+
+### 从Java程序中调用C函数
+
+```java
+public class HelloNative {
+    public static native void greeting();
+}
+```
+
+```sh
+javac HelloNative.java
+# 产生一个头文件 HelloNative.h
+javah HelloNative
+# JDK8+  最后一个参数是头文件输出目录
+javac HelloNative.java -h .
+```
+
+HelloNative.h 内容
+
+```c
+/* DO NOT EDIT THIS FILE - it is machine generated */
+#include <jni.h>
+/* Header for class Test */
+
+#ifndef _Included_HelloNative
+#define _Included_HelloNative
+#ifdef __cplusplus
+extern "C" {
+#endif
+/*
+ * Class:     Test
+ * Method:    greeting
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_HelloNative_greeting
+  (JNIEnv *, jclass);
+
+#ifdef __cplusplus
+}
+#endif
+#endif
+```
+
+c实现的函数
+
+```c
+#include "HelloNative.h"
+#include <stdio.h>
+
+JNIEXPORT void JNICALL Java_HelloNative_greeting(JNIEnv* env, jclass cl)
+{
+    printf("Hello Native World!\n");
+}
+```
+
+C++实现的函数
+
+```c++
+extern "C"
+JNIEXPORT void JNICALL Java_HelloNative_greeting(JNIEnv* env, jclass cl)
+{
+    cout << "Hello Native World!" << endl;
+}
+```
+
+将本地C代码编译到一个动态装载库中
+
+```sh
+# linux
+gcc -fPIC -I jdk/include -I jdk/include/linux -shared -o libHelloNative.so HelloNative.c
+# Solaris
+cc -G -I jdk/include -I jdk/include/solaris -o libHelloNative.so HelloNative.c
+# Windows
+cl -I jdk/include -I jdk/include/win32 -LD HelloNative.c -Fe HelloNative.dll
+```
+
+使用
+
+```java
+class HelloNativeTest {
+    public static void main(String[] args) {
+        HelloNative.greeting();
+    }
+    // 加载链接库
+    static {
+        System.loadLibrary("HelloNative");
+    }
+}
+```
+
+如果运行在Linux下，必须把当前目录添加到库路径中。
+
+```sh
+export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
+# 或者
+java -Djava.library.path=. HelloNativeTest
 ```
 
 

@@ -1119,6 +1119,14 @@ public String insertPersonSql() {
 
 需要导入 mybatis-spring 包
 
+```xml
+<dependency>
+  <groupId>org.mybatis</groupId>
+  <artifactId>mybatis-spring</artifactId>
+  <version>2.0.7</version>
+</dependency>
+```
+
 文档结构(仅供参考)
 
 ```
@@ -1190,10 +1198,10 @@ spring-config.xml
 	</bean>
 
 	<!-- 手动注册映射器 -->
-	<!-- <bean id="demoMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
+	<bean id="demoMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
 		<property name="mapperInterface" value="mapper.DemoMapper" />
 		<property name="sqlSessionFactory" ref="sqlSessionFactory" />
-	</bean> -->
+	</bean>
   <!-- 或者：自动扫描发现映射器 -->
   <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
     <property name="basePackage" value="mapper" />
@@ -1202,7 +1210,27 @@ spring-config.xml
 </beans>
 ```
 
-在 MyBatis-Spring 中，使用 SqlSessionFactoryBean 来创建 SqlSessionFactory。
+在 MyBatis-Spring 中，使用 SqlSessionFactoryBean 来创建 SqlSessionFactory。MapperFactoryBean 将会负责 SqlSession 的创建和关闭。
+
+java 版配置
+
+```java
+@Configuration
+public class MyBatisConfig {
+  @Bean
+  public SqlSessionFactory sqlSessionFactory() throws Exception {
+    SqlSessionFactoryBean factoryBean = new SqlSessionFactoryBean();
+    factoryBean.setDataSource(dataSource());
+    return factoryBean.getObject();
+  }
+
+  @Bean
+  public UserMapper userMapper() throws Exception {
+    SqlSessionTemplate sqlSessionTemplate = new SqlSessionTemplate(sqlSessionFactory());
+    return sqlSessionTemplate.getMapper(UserMapper.class);
+  }
+}
+```
 
 mybatis-config.xml
 
@@ -1220,7 +1248,30 @@ mybatis-config.xml
 
 如果映射器接口 DemoMapper 在相同的类路径下有对应的 MyBatis XML 映射器配置文件，将会被 MapperFactoryBean 自动解析。不需要在 MyBatis 配置文件中显式配置映射器。
 
-MyBatis-Spring 借助了 Spring 中的 DataSourceTransactionManager 来实现事务管理。 
+### 事务
+
+MyBatis-Spring 借助了 Spring 中的 DataSourceTransactionManager 来实现事务管理。 支持 @Transactional 注解和 AOP 风格的配置。在事务处理期间，一个单独的 SqlSession 对象将会被创建和使用。当事务完成时，这个 session 会以合适的方式提交或回滚。
+
+要开启 Spring 的事务处理功能，在 Spring 的配置文件中创建一个 DataSourceTransactionManager 对象：
+
+```xml
+<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+  <!-- 必须和用来创建 SqlSessionFactoryBean 的是同一个数据源 -->
+  <constructor-arg ref="dataSource" />
+</bean>
+```
+
+```java
+@Configuration
+public class DataSourceConfig {
+  @Bean
+  public DataSourceTransactionManager transactionManager() {
+    return new DataSourceTransactionManager(dataSource());
+  }
+}
+```
+
+编程式事务详见指南
 
 ### 发现映射器
 
