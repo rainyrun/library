@@ -1,5 +1,16 @@
 # Kafka
 
+优点
+
+- 多生产者
+- 多消费者
+- 基于磁盘存储
+- 伸缩性
+- 高性能：高吞吐、低延迟
+
+
+
+
 kafka的使用场景：用于消息的异步传递，生产者将message放入kafka的topic，消费者从topic里获取message处理。
 
 和其他消息队列相比，kafka有什么优势？答：kafka的消息消费后并没有消失，而是有一个偏移量（类似指针）在区分已消费的消息和未消费的消息。如果想重新消费，重置kafka的偏移量即可（存疑？）。
@@ -301,7 +312,7 @@ try {
 }
 ```
 
-在第一次调用新消费者的poll()方法时，它会负责查找GroupCoordinator，然后加入群组，接受分配的分区。如果发生了再均衡，整个过程也是轮询期间进行的，心跳也是从轮询里发出去的。所以要确保在轮询期间所做的任何处理工作，都应该尽快完成。（rainy：为什么，不完成有什么后果？轮询时做的操作是，获取消息、心跳、再均衡，这些不都是kafka在做吗？）
+在第一次调用新消费者的poll()方法时，它会负责查找GroupCoordinator，然后加入群组，接受分配的分区。如果发生了再均衡，整个过程也是轮询期间进行的，心跳也是从轮询里发出去的。所以要确保在轮询期间所做的任何处理工作，都应该尽快完成。（rainy：为什么，不完成有什么后果？轮询时做的操作是，获取消息、心跳、再均衡，这些不都是kafka在做吗？）新版本的kafka，心跳和poll是相互独立的，poll的最大处理时长由 max.poll.interval.ms 决定。
 
 最好是把消费者的逻辑，封装在自己的对象里，然后用Java的ExecutorService启动多个线程，使每个消费者运行在自己的线程上。
 
@@ -523,6 +534,8 @@ while(true) {
 }
 ```
 
+把 处理记录并写入数据库、偏移量存入数据库 放在一个session里，保证原子操作，来保证消息不丢失
+
 ### 退出消费者
 
 调用 consumer.wakeup() 可以退出 poll() 并抛出WakeupException。
@@ -550,13 +563,13 @@ Runtime.getRuntime().addShutdownHook(new Thread(){
 
 ```java
 List<PartitionInfo> partitionInfos = null;
-partitionInfos = consumer.partitionsFor("topic");
+partitionInfos = consumer.partitionsFor("topic"); // 请求获取主题可用的分区
 
 if (partitionInfos != null) {
     for(PartitionInfo partition : partitionInfos) {
         partitions.add(new TopicPartition(partition.topic(), partition.partition()));
     }
-    consumer.assign(partitions);
+    consumer.assign(partitions); // 设置分区
 }
 
 // 处理消息
@@ -564,13 +577,25 @@ if (partitionInfos != null) {
 
 ## 深入kafka
 
-broker启动时，通过创建临时节点把自己的id注册到Zookeeper
+### 集群成员关系
+
+每个broker有一个唯一标识符，broker启动时，通过创建临时节点把自己的id注册到Zookeeper。
+
+Kafka组件订阅Zookeeper的 /brokers/ids 路径，当有 broker 加入或者退出时，组件可以获得通知。
+
+broker 停机时，启动时创建的临时节点会自动从 Zookeeper 移除。监听 broker 列表的Kafka组件会被告知broker已移除。但是 broker id 会继续存在其他数据结构中。如果用相同id启动一个全新的broker，它会立即加入集群，并拥有与旧broker相同的分区和主题。
 
 ### 控制器
 
+一个集群里只有一个控制器。
+
 控制器就是一个broker，还负责分区首领的选举。
 
-集群里第一个启动的broker通过在zookeeper里创建一个临时节点 /controller 让自己成为控制器。其他broker在尝试创建/controller临时节点时，会发现已存在，然后会创建zookeeper watch对象，这样就可以收到这个节点的变更通知。
+集群里第一个启动的broker通过在zookeeper里创建一个临时节点 /controller 让自己成为控制器。其他broker在尝试创建/controller临时节点时，会发现已存在，然后会创建zookeeper watch对象，这样就可以收到这个节点的变更通知。当控制器挂掉后，第一个在zk里注册 /controller 成功的broker成为控制器，zk回分配一个数值更大的controller epoch。其他broker跟新watch对象。
+
+当broker离开集群时，它身上的分区首领需要重新选举。控制器遍历分区，选择分区的下一个副本为新首领，并告知包含分区的broker，让新leader处理生产者消费者的信息，让follower从新leader复制消息。
+
+当broker加入集群时，控制器会检查新broker上是否有现有分区的副本。有，新broker上的副本就从首领那里复制消息。
 
 控制器使用 epoch 来避免“脑裂”（指2个节点同时认为自己是当前的控制器）
 
@@ -583,7 +608,7 @@ broker启动时，通过创建临时节点把自己的id注册到Zookeeper
 
 跟随者如果在10s内没有请求任何消息，或没有请求最新数据，那它就被认为是不同步的。首领失效时，只有同步副本才有可能被选为新首领。
 
-每个分区都有一个首选首领。选首领时会优选首选首领。
+每个分区都有一个首选首领。选首领时会优选首选首领。因为创建分区时，需要在broker之间均衡首领。当首选leader不是leader，且它是同步的，就会触发首领选举，让它成为首领。
 
 ```sh
 # 跟随者正常不活跃时间
@@ -593,6 +618,10 @@ auto.leader.rebalance.enable
 ```
 
 ### 处理请求
+
+kafka 提供了一个二进制协议（基于TCP），指定了请求消息的格式和broker的响应。
+
+broker 按照请求到达的顺序来处理它们，保证了分区的消息是有序的。
 
 kafka请求消息
 
@@ -711,3 +740,16 @@ auto.commit.interval.ms
 
 消费者的pause()确保其他轮询不会返回数据，resume()让消费者继续从轮询里获取数据。
 
+## 参考书籍
+
+《Kafka权威指南》
+
+## 待解决问题
+
+- kafka的broker 可以伸缩，伸我理解，但是缩怎么缩呢？
+
+- kafka的消息是可以过期的，过期后，偏移量会改变吗？偏移量如果不改变，但是一直增长超出限制怎么办？如果一个consumer拿着已过期消息的偏移量，会读到什么结果？
+
+- kafka 是开源的吗？它靠什么赚钱？java语言是开源的，它靠什么赚钱？kafka诞生于linkin，那么它的维护是linkin在做吗？linkin为什么把它开源了呢？答：kafka的创始者，开了一家提供技术服务的公司，用来教别人怎么用kafka。
+
+- agent 是如何使用 session 的？为什么
