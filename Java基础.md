@@ -3911,126 +3911,6 @@ FileLock tryLock(long start, long size, boolean shared);
 lock.close();
 ```
 
-### NIO
-
-java.nio全称java non-blocking IO（实际上是 new io），是指JDK 1.4 及以上版本里提供的新api（New IO），为所有的原始类型（boolean类型除外）提供缓存支持的数据容器，使用它可以提供非阻塞式的高伸缩性网络。
-
-数据总是从通道被读取到缓冲中或者从缓冲写入到通道中。
-
-关键类： Channel 、 Selector 、 Buffer
-
-通道Channel
-
-NIO的通道类似于流，但有些区别如下：
-
-1. 通道可以同时进行读写，而流只能读或者只能写
-2. 通道可以实现异步读写数据
-3. 通道可以从缓冲读数据，也可以写数据到缓冲。
-
-Selector
-
-一个组件，可以检测多个NIO channel，看看读或者写事件是否就绪。
-
-多个Channel以事件的方式可以注册到同一个Selector，从而使用一个线程处理多个请求成为可能。
-
-Selector 可以轮询 Channel 的状态，Buffer 相当于 Channel 里的一个位置。
-
-```java
-public void selector() throws IOException {
-    ByteBuffer buffer = ByteBuffer.allocate(1024);
-    Selector selector = Selector.open();
-    ServerSocketChannel ssc = ServerSocketChannel.open();
-    ssc.configureBlocking(false); // 非阻塞方式
-    ssc.socket().bind(new InetSocketAddress(8080));
-    ssc.register(selector, SelectionKey.OP_ACCEPT); // 注册监听的时间
-    while(true) {
-        Set selectedKeys = selector.selectedKeys(); // 取得所有key集合
-        Iterator it = selectedKeys.iterator();
-        while(it.hashNext()){
-            SelectionKey key = (SelectionKey) it.next();
-            if(...){
-                ServerSocketChannel ssChannel = (ServerSocketChannel) key.channel();
-                SocketChannel sc = ssChannel.accept(); // 接受请求
-                sc.configureBlocking(false);
-                sc.register(selector, SelectionKey.OP_READ);
-                it.remove()
-            } else if(...){
-                SocketChannel sc = (SocketChannel)key.channel();
-                while(true){
-                    buffer.clear();
-                    int n = sc.read(buffer); // 读数据
-                    if(n <= 0){
-                        break;
-                    }
-                    buffer.flip();
-                }
-                it.remove();
-            }
-        }
-    }
-
-}
-
-// 通过Native代码操作与底层存储空间关联的缓冲区
-ByteBuffer.allocateDirector(size);
-```
-
-Buffer中的索引
-
-![buffer中的索引](images/Java/buffer中的索引.png)
-
-![DirectBuffer和NonDirectBuffer对比](images/Java/DirectBuffer和NonDirectBuffer对比.png)
-
-NIO的数据访问方式
-
-FileChannel.transferXXX 减少数据从内核到用户空间的复制。
-
-FileChannel.map 将文件按照一定大小映射为内存区域。
-
-```java
-public static void map(String[] args) {
-    int BUFFER_SIZE = 1024;
-    String filename = "test.db";
-    long fileLength = new File(filename).length();
-    int bufferCount = 1 + (int)(fileLength / BUFFER_SIZE);
-    MappedByteBuffer[] buffers = new MappedByteBuffer[bufferCount];
-    long remaining = fileLength;
-    for(int i = 0; i < bufferCount; i++){
-        RandomAccessFile file;
-        try {
-            file = new RandomAccessFile(filename, "r");
-            buffers[i] = file.getChannerl().map(FileChannel.MapMode.READ_ONLY, i * BUFFER_SIZE, (int)Math.min(remaining, BUFFER_SIZE));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        remaining -= BUFFER_SIZE;
-    }
-}
-```
-
-同一个 channel 的 select 不能被并发的调用。
-
-NIO的特点：如果 TCP RecvBuffer 有数据，就把数据从网卡读到内存，并且返回给用户；反之直接返回0，永远不会阻塞。
-
-问：读场景，没有数据直接返回0，读的数据不完整怎么办？写场景，如果没有写入的空间，就直接返回写结束吗？使用数据的线程如何知道已经读完了，可以处理数据了？
-
-答：一个线程处理多个连接，一个连接没有数据可读，就将它注册到Selector上，并切换到其他连接进行读写。使用数据的线程，需要告诉 Selector 它想要这个数据，当数据读完时，Selector 会告知该线程。（rainy：那读数据的线程，本质上也是阻塞的吧？只是在有多个连接的时候，平均的阻塞时间变短了）
-
-NIO的主要事件有：读就写、写就绪、有新连接到来。
-
-传统的同步阻塞I/O处理（BIO，blocking I/O）
-
-rainy: io是计算机系统向外设读或者写，因为外设的输入和输出比较慢，所以需要等待。在向外设输入的时候，CPU没有工作的吗？比如外设从缓存里依次读取数据，此时CPU已经把数据写到缓存了，就等着外设去读完了。等外设读完，这个流才结束吗？所以io其实是2个设备进行数据交换，因为读写速度不匹配，导致一方需要等待另一方。关于阻塞，阻塞的时候cpu没有工作吗？不需要定时轮询来看阻塞是否结束吗？答：还有一种通知机制，比如当缓存被读完的时候，就通知可以输入了，这种是触发式的，需要双方协商好怎么通知，此时在通知前，cpu也是不工作的。当一个线程被阻塞时，可以让另一个线程使用cpu资源。
-
-使用线程池来高效利用cpu资源。缺点（JVM使用的是内核线程）
-
-- 线程的创建和销毁成本高
-- 线程占用内存大
-- 线程切换成本高，需要保留线程上下文，执行系统调用
-- 当线程数量多，但外部网络不稳定时，容易造成大量线程同时激活，从而造成系统压力过大。
-
-
-
 ## 正则表达式
 
 正则表达式(regular expression)用于指定字符串的模式，用于定位匹配某种特定模式的字符串。
@@ -4104,7 +3984,7 @@ String[] tokens = input.split("\\s*,\\s*"); // 使用String.split方法
 
 ## 网络编程
 
-### 连接到服务器
+### 连接到服务器（TCP）
 
 telnet 连接到服务器
 
@@ -4119,13 +3999,15 @@ java连接到服务器
 
 TCP协议
 
+客户端 Socket
+
 ```java
 // 入门程序
 public class SocketTest{
     public static void main(String[] args) {
-        try(Socket s = new Socket("time-a.nist.gov", 13); // 目的地址、端口
+        try(Socket s = new Socket("time-a.nist.gov", 13); // 目的地址、端口。会一直阻塞，直到和服务器建立连接
             Scanner in = new Scanner(s.getInputStream(), "UTF-8")){
-            while(in.hasNextLine()){ // 读入服务器发来的数据
+            while(in.hasNextLine()){ // 读入服务器发来的数据，直到服务器断开连接
                 String line = in.nextLine();
                 System.out.println(line);
             }
@@ -4169,45 +4051,9 @@ byte[] addressBytes = address.getAddress();
 InetAddress address = InetAddress.getLocalHost();
 ```
 
-UDP协议发送数据
+### 实现服务器（TCP）
 
-```java
-DatagramSocket ds = new DatagramSocket();
-String s = "hello, UDP!"
-byte[] bys = s.getBytes();
-int length = bys.length;
-InetAddress address = InetAddress.getByName("rainyrun.top"); // 目的地址
-int port = 8888; // 目的端口
-// 打包，提供必要信息
-DatagramPackage dp = new DatagramPacket(bys, length, address, port);
-// 发送数据
-ds.send(dp);
-// 释放资源
-ds.close();
-```
-
-UDP协议接受数据
-
-```java
-// 创建接收端Scoket对象
-DatagramSocket ds = new DatagramSocket(8888);
-//接收数据
-byte[] bys = new byte[1024];
-DatagramPacket dp = new DatagramPacket(bys, bys.length);
-ds.receive(dp);
-//解析数据
-InetAddress address = dp.getAddress();
-byte[] data = dp.getData();
-int length = dp.getLength();
-//输出数据
-syso
-//释放资源
-dp.close();
-```
-
-### 实现服务器
-
-入门程序
+入门程序：只能服务一个Socket，即只能接受一个客户端的请求。
 
 ```java
 try(
@@ -4233,7 +4079,7 @@ try(
 
 当创建Socket对象时，操作系统将会为InputStream和OutputStream分配一定大小的缓存区。写入端将数据写到OutputStream对应的SendQ队列中，当队列填满时，数据被转移到另一端的InputStream的RecvQ队列中，如果RecvQ已经满了，那么OutputStream的write方法将会阻塞。
 
-为多个客户端服务
+为多个客户端服务（BIO）
 
 ```java
 try(ServerSocket s = new ServerSocket(8189)){
@@ -4276,24 +4122,286 @@ class ThreadEchoHandler implements Runnable {
 }
 ```
 
-半关闭
+半关闭（TCP的四次挥手）
 
 ```java
 socket.shutdownOutput(); // 关闭输出流
 socket.shutdownInput(); // 关闭输入流
 ```
 
-### 可中断套接字
+### NIO
 
-当连接套接字或者通过套接字读写数据时，当前线程会被阻塞直到操作成功或超时为止。
+java.nio全称java non-blocking IO（实际上是 new io），是指JDK 1.4 及以上版本里提供的新api（New IO），为所有的原始类型（boolean类型除外）提供缓存支持的数据容器，使用它可以提供非阻塞式的高伸缩性网络。
 
-使用 SocketChannel 类来中断套接字操作
+数据总是从通道被读取到缓冲中或者从缓冲写入到通道中。
+
+关键类： Channel 、 Selector 、 Buffer
+
+#### 通道Channel
+
+表示一个打开的连接。
+
+FileChannel类
 
 ```java
-SocketChannel channel = SocketChannel.open(new InetSocketAddress(host, port));
+// 获取文件通道
+FileChannel channel = FileChannel.open(Paths.get(fileName), StandardOpenOption.READ);
+// 分配字节缓存
+ByteBuffer buf = ByteBuffer.allocate(10);
+
+// 读数据
+StringBuilder text = new StringBuilder();
+while (channel.read(buf) != -1){ // 读取通道中的数据，并写入到 buf 中
+    buf.flip(); // 缓存区切换到读模式
+    while (buf.position() < buf.limit()){ // 读取 buf 中的数据
+        text.append((char)buf.get());
+    }
+    buf.clear(); // 清空 buffer，缓存区切换到写模式
+}
+
+// 写数据
+for (int i = 0; i < text.length(); i++) {
+    buf.put((byte)text.charAt(i)); // 填充缓冲区，需要将 2 字节的 char 强转为 1 自己的 byte
+    if (buf.position() == buf.limit() || i == text.length() - 1) { // 缓存区已满或者已经遍历到最后一个字符
+        buf.flip(); // 将缓冲区由写模式置为读模式
+        channel.write(buf); // 将缓冲区的数据写到通道
+        buf.clear(); // 清空缓存区，将缓冲区置为写模式，下次才能使用
+    }
+}
+// 将数据刷出到物理磁盘，FileChannel 的 force(boolean metaData) 方法可以确保对文件的操作能够更新到磁盘。
+channel.force(false);
+
+// 关闭
+channel.close();
+```
+
+SocketChannel 类和 ServerSocketChannel 类
+
+```java
+// 客户端
+// 打开通道，连接到服务端。
+SocketChannel channel = SocketChannel.open(); // 打开通道，此时还没有打开 TCP 连接
+channel.connect(new InetSocketAddress("localhost", 9090)); // 连接到服务端
+SocketChannel channel = SocketChannel.open(new InetSocketAddress(host, port)); // 第二种用法
+// 分配缓冲区
+ByteBuffer buf = ByteBuffer.allocate(10); // 分配一个 10 字节的缓冲区，不实用，容量太小
+// 配置是否为阻塞方式。（默认为阻塞方式）
+channel.configureBlocking(false); // 配置通道为非阻塞模式
+// 输入流
 Scanner in = new Scanner(channel, "UTF-8");
 // 将 channel 转换成输出流
 OutputStream outStream = Channels.newOutputStream(channel);
+channel.close(); // 关闭通道
+
+// 服务端
+// 打开一个 ServerSocketChannel 通道, 绑定端口。
+ServerSocketChannel server = ServerSocketChannel.open(); // 打开通道
+server.bind(new InetSocketAddress(9090)); // 绑定端口
+SocketChannel client = server.accept(); // 阻塞，直到有连接过来
+client.close();
+```
+
+NIO的通道类似于流，但有些区别如下：
+
+1. 通道可以同时进行读写，而流只能读或者只能写
+2. 通道可以实现异步读写数据
+3. 通道可以从缓冲读数据，也可以写数据到缓冲。
+
+#### Buffer(缓冲区)
+
+在NIO库中，所有数据都是用缓冲区处理的。
+
+在读取数据时，它是直接读到缓冲区中的,在写入数据时，它也是写入到缓冲区中的,任何时候访问 NIO 中的数据，都是将它放到缓冲区中。
+
+Buffer中的索引
+
+![buffer中的索引](images/Java/buffer中的索引.png)
+
+![DirectBuffer和NonDirectBuffer对比](images/Java/DirectBuffer和NonDirectBuffer对比.png)
+
+
+#### Selector
+
+Selector会不断的轮询注册在上面的所有channel，如果某个channel为读写等事件做好准备，那么就处于就绪状态。通过Selector可以不断轮询发现出就绪的channel，进行后续的IO操作。
+
+```java
+Selector selector = Selector.open(); // 获取一个选择器实例
+// 能够被选择器监控的通道必须实现了 SelectableChannel 接口，并且需要将通道配置成非阻塞模式，否则后续的注册步骤会抛出 IllegalBlockingModeException。
+SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress("localhost", 9090));
+socketChannel.configureBlocking(false); // 配置通道为非阻塞模式
+socketChannel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE); // 将套接字通过到注册到选择器，关注 read 和 write 事件
+while (selector.select() > 0){ // 轮询，且返回时有就绪事件。是一个阻塞方法
+    Set<SelectionKey> keys = selector.selectedKeys(); // 获取就绪事件集合
+    // 处理就绪事件
+    for(SelectionKey key : keys){
+        if(key.isWritable()){ // 可写事件
+        }
+    }
+}
+
+
+// NIO Server
+public static void main(String[] args) throws  Exception{
+    //创建ServerSocketChannel，-->> ServerSocket
+    ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+    InetSocketAddress inetSocketAddress = new InetSocketAddress(5555);
+    serverSocketChannel.socket().bind(inetSocketAddress);
+    serverSocketChannel.configureBlocking(false); //设置成非阻塞
+
+    //开启selector,并注册accept事件
+    Selector selector = Selector.open();
+    serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+
+    ByteBuffer buffer = ByteBuffer.allocate(1024);
+    while(true) {
+        selector.select(2000);  //监听所有通道
+        //遍历selectionKeys
+        Set<SelectionKey> selectionKeys = selector.selectedKeys();
+        Iterator<SelectionKey> iterator = selectionKeys.iterator();
+        while (iterator.hasNext()) {
+            SelectionKey key = iterator.next();
+            if(key.isAcceptable()) {  //处理连接事件
+                SocketChannel socketChannel = serverSocketChannel.accept();
+                socketChannel.configureBlocking(false);  //设置为非阻塞
+                System.out.println("client:" + socketChannel.getLocalAddress() + " is connect");
+                socketChannel.register(selector, SelectionKey.OP_READ); //注册客户端读取事件到selector
+            } else if (key.isReadable()) {  //处理读取事件
+                ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
+                SocketChannel channel = (SocketChannel) key.channel();
+                channel.read(byteBuffer);
+                System.out.println("client:" + channel.getLocalAddress() + " send " + new String(byteBuffer.array()));
+            }
+            iterator.remove();  //事件处理完毕，要记得清除
+        }
+    }
+}
+// rainy：有个问题，如果 SelectionKey.OP_ACCEPT 后面再也没有注册，是不是只能读取一个客户端的连接？如果后面还会注册，是谁来注册的？
+
+// NIO client
+public static void main(String[] args) throws Exception{
+    SocketChannel socketChannel = SocketChannel.open();
+    socketChannel.configureBlocking(false);
+    InetSocketAddress inetSocketAddress = new InetSocketAddress("127.0.0.1", 5555);
+
+    if(!socketChannel.connect(inetSocketAddress)) {
+        while (!socketChannel.finishConnect()) {
+            System.out.println("客户端正在连接中，请耐心等待");
+        }
+    }
+
+    ByteBuffer byteBuffer = ByteBuffer.wrap("nio learning class".getBytes());
+    socketChannel.write(byteBuffer);
+    socketChannel.close();
+}
+```
+
+有 3 种方式可以 select 就绪事件：
+
+- select() 阻塞方法，有一个就绪事件，或者其它线程调用了 wakeup() 或者当前线程被中断时返回。
+- select(long timeout) 阻塞方法，有一个就绪事件，或者其它线程调用了 wakeup()，或者当前线程被中断，或者阻塞时长达到了 timeout 时返回。不抛出超时异常。
+- selectNode() 不阻塞，如果无就绪事件，则返回 0；如果有就绪事件，则将就绪事件放到一个集合，返回就绪事件的数量。
+
+
+我的问题：
+
+SocketChannel 和 SocketServerChannel 区别？
+
+Channel写数据是怎么是实现的？
+
+服务器监听一个端口，可能有多个客户端的连接过来，怎么分辨识别，并单独处理？应该是用源端口和源ip来拆分，但是目的端口和目的ip都是一样的。
+
+怎么判断一个用户的连接请求已经结束了？
+
+如果accept也不是阻塞的我就懂了，链接来了，注册读事件，读到数据，没读完，注册读数据；读完数据，要写进去的时候，注册写数据，写进去就算，没写完继续注册写时间，写完了就算。监听进行也是一样。
+
+
+
+
+
+NIO的数据访问方式
+
+FileChannel.transferXXX 减少数据从内核到用户空间的复制。
+
+FileChannel.map 将文件按照一定大小映射为内存区域。
+
+```java
+public static void map(String[] args) {
+    int BUFFER_SIZE = 1024;
+    String filename = "test.db";
+    long fileLength = new File(filename).length();
+    int bufferCount = 1 + (int)(fileLength / BUFFER_SIZE);
+    MappedByteBuffer[] buffers = new MappedByteBuffer[bufferCount];
+    long remaining = fileLength;
+    for(int i = 0; i < bufferCount; i++){
+        RandomAccessFile file;
+        try {
+            file = new RandomAccessFile(filename, "r");
+            buffers[i] = file.getChannerl().map(FileChannel.MapMode.READ_ONLY, i * BUFFER_SIZE, (int)Math.min(remaining, BUFFER_SIZE));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        remaining -= BUFFER_SIZE;
+    }
+}
+```
+
+同一个 channel 的 select 不能被并发的调用。
+
+NIO的特点：如果 TCP RecvBuffer 有数据，就把数据从网卡读到内存，并且返回给用户；反之直接返回0，永远不会阻塞。
+
+问：读场景，没有数据直接返回0，读的数据不完整怎么办？写场景，如果没有写入的空间，就直接返回写结束吗？使用数据的线程如何知道已经读完了，可以处理数据了？
+
+答：一个线程处理多个连接，一个连接没有数据可读，就将它注册到Selector上，并切换到其他连接进行读写。使用数据的线程，需要告诉 Selector 它想要这个数据，当数据读完时，Selector 会告知该线程。（rainy：那读数据的线程，本质上也是阻塞的吧？只是在有多个连接的时候，平均的阻塞时间变短了）
+
+NIO的主要事件有：读就绪、写就绪、有新连接到来。
+
+传统的同步阻塞I/O处理（BIO，blocking I/O）
+
+rainy: io是计算机系统向外设读或者写，因为外设的输入和输出比较慢，所以需要等待。在向外设输入的时候，CPU没有工作的吗？比如外设从缓存里依次读取数据，此时CPU已经把数据写到缓存了，就等着外设去读完了。等外设读完，这个流才结束吗？所以io其实是2个设备进行数据交换，因为读写速度不匹配，导致一方需要等待另一方。关于阻塞，阻塞的时候cpu没有工作吗？不需要定时轮询来看阻塞是否结束吗？答：还有一种通知机制，比如当缓存被读完的时候，就通知可以输入了，这种是触发式的，需要双方协商好怎么通知，此时在通知前，cpu也是不工作的。当一个线程被阻塞时，可以让另一个线程使用cpu资源。
+
+使用线程池来高效利用cpu资源。缺点（JVM使用的是内核线程）
+
+- 线程的创建和销毁成本高
+- 线程占用内存大
+- 线程切换成本高，需要保留线程上下文，执行系统调用
+- 当线程数量多，但外部网络不稳定时，容易造成大量线程同时激活，从而造成系统压力过大。
+
+### UDP
+
+UDP协议发送数据
+
+```java
+DatagramSocket ds = new DatagramSocket();
+String s = "hello, UDP!"
+byte[] bys = s.getBytes();
+int length = bys.length;
+InetAddress address = InetAddress.getByName("rainyrun.top"); // 目的地址
+int port = 8888; // 目的端口
+// 打包，提供必要信息
+DatagramPackage dp = new DatagramPacket(bys, length, address, port);
+// 发送数据
+ds.send(dp);
+// 释放资源
+ds.close();
+```
+
+UDP协议接受数据
+
+```java
+// 创建接收端Scoket对象
+DatagramSocket ds = new DatagramSocket(8888);
+//接收数据
+byte[] bys = new byte[1024];
+DatagramPacket dp = new DatagramPacket(bys, bys.length);
+ds.receive(dp);
+//解析数据
+InetAddress address = dp.getAddress();
+byte[] data = dp.getData();
+int length = dp.getLength();
+//输出数据
+syso
+//释放资源
+dp.close();
 ```
 
 ### 获取 Web 数据
